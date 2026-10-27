@@ -1,8 +1,16 @@
 @echo off
-title Movie Watchlist Manager
-powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\start-local.ps1"
-if %errorlevel% neq 0 (
+setlocal
+cd /d "%~dp0"
+title Movie Watchlist Manager - Local Server
+
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0start-local.ps1"
+set EXIT_CODE=%ERRORLEVEL%
+
+if %EXIT_CODE% neq 0 (
     echo.
-    echo An error occurred. Press any key to exit.
+    echo ========================================================
+    echo  [!] Movie Watchlist Manager stopped or exited (code: %EXIT_CODE%).
+    echo ========================================================
+    echo Press any key to close this window...
     pause >nul
 )
