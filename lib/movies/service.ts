@@ -1,7 +1,7 @@
 import { eq, and, or, like, desc, asc, sql } from 'drizzle-orm';
 import { getDb } from '@/db';
 import { movies, type Movie, type WatchStatus } from '@/db/schema';
-import { fetchMovieMetadataByImdbId } from '@/lib/tmdb';
+import { fetchMovieMetadataByImdbId, checkImdbTitleType } from '@/lib/tmdb';
 
 export interface GetMoviesParams {
   userId: string;
@@ -159,6 +159,18 @@ export class MovieService {
       const err = new Error(`Movie with IMDb ID "${imdbId}" is already in your watchlist.`);
       (err as any).code = 'DUPLICATE_MOVIE';
       (err as any).existingMovie = existing;
+      throw err;
+    }
+
+    // Verify title is a movie and not a TV series/episode/game
+    const titleCheck = await checkImdbTitleType(imdbId);
+    if (titleCheck.isKnown && !titleCheck.isMovie) {
+      const titleLabel = titleCheck.title ? ` (${titleCheck.title})` : '';
+      const typeLabel = titleCheck.typeName ? ` a ${titleCheck.typeName}` : ' a TV series';
+      const err = new Error(
+        `This IMDb ID belongs to${typeLabel}${titleLabel}. Movie Watchlist Manager supports movies only.`,
+      );
+      (err as any).code = 'UNSUPPORTED_TITLE_TYPE';
       throw err;
     }
 

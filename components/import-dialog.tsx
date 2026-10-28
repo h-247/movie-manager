@@ -736,7 +736,8 @@ export function ImportDialog({
                           (r) =>
                             r.parsed &&
                             !r.isDuplicateInInput &&
-                            !r.isAlreadyInCollection,
+                            !r.isAlreadyInCollection &&
+                            !r.isUnsupportedType,
                         ).length
                       }
                     </span>
@@ -756,9 +757,9 @@ export function ImportDialog({
                   </div>
                   <div className="rounded bg-[#262626] p-2">
                     <span className="block text-lg font-bold text-red-400">
-                      {bulkInspectionResults.filter((r) => !r.parsed).length}
+                      {bulkInspectionResults.filter((r) => !r.parsed || r.isUnsupportedType).length}
                     </span>
-                    <span className="text-[11px] text-neutral-400">Invalid Links</span>
+                    <span className="text-[11px] text-neutral-400">Unsupported / TV</span>
                   </div>
                 </div>
               </div>

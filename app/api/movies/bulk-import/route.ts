@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getAuthUser } from '@/lib/auth';
 import { parseBulkImdbInput } from '@/lib/imdb';
 import { movieService } from '@/lib/movies/service';
+import { checkImdbTitleType } from '@/lib/tmdb';
 import { bulkImportInputSchema } from '@/lib/validation';
 
 export async function POST(request: Request) {
@@ -23,7 +24,7 @@ export async function POST(request: Request) {
     const isPreviewOnly = body.previewOnly === true;
     const items = parseBulkImdbInput(parsed.data.content);
 
-    // If preview only, check each valid item against existing movies
+    // If preview only, check each valid item against existing movies and verify title type
     if (isPreviewOnly) {
       const previewItems = await Promise.all(
         items.map(async (item) => {
@@ -33,6 +34,19 @@ export async function POST(request: Request) {
               isAlreadyInCollection: false,
             };
           }
+
+          // Check if TV series or unsupported
+          const titleCheck = await checkImdbTitleType(item.parsed.imdbId);
+          if (titleCheck.isKnown && !titleCheck.isMovie) {
+            const titleLabel = titleCheck.title ? ` (${titleCheck.title})` : '';
+            return {
+              ...item,
+              isAlreadyInCollection: false,
+              isUnsupportedType: true,
+              error: `TV series or unsupported title type${titleLabel}`,
+            };
+          }
+
           const existing = await movieService.getMovieByImdbId(
             item.parsed.imdbId,
             user.userId,

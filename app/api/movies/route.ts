@@ -60,6 +60,17 @@ export async function POST(request: Request) {
     const movie = await movieService.createMovie(parsed.data, user.userId);
     return NextResponse.json({ movie }, { status: 201 });
   } catch (error: any) {
+    if (error.code === 'UNSUPPORTED_TITLE_TYPE') {
+      return NextResponse.json(
+        {
+          error: error.message,
+          isUnsupportedType: true,
+          code: 'UNSUPPORTED_TITLE_TYPE',
+        },
+        { status: 400 },
+      );
+    }
+
     if (error.code === 'DUPLICATE_MOVIE') {
       return NextResponse.json(
         {

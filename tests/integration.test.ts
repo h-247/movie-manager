@@ -8,6 +8,7 @@ describe('Movie Watchlist Integration Tests', () => {
   let service: MovieService;
 
   beforeEach(() => {
+    vi.restoreAllMocks();
     dbRecords = [];
 
     // Realistic in-memory SQLite emulation for MovieService
@@ -357,5 +358,24 @@ describe('Movie Watchlist Integration Tests', () => {
     expect(result.imported).toHaveLength(0);
     expect(result.failed).toHaveLength(1);
     expect(result.failed[0].error).toContain('supports movies only');
+  });
+
+  it('12. Explicitly detects and rejects Peaky Blinders (tt2442560) as a TV series', async () => {
+    const res = await tmdbModule.fetchMovieMetadataByImdbId('tt2442560');
+    expect(res.success).toBe(false);
+    if (!res.success) {
+      expect(res.isUnsupportedType).toBe(true);
+      expect(res.canFallbackToManual).toBe(false);
+      expect(res.error).toMatch(/TV series.*Peaky Blinders/i);
+    }
+
+    // Also verify createMovie rejects it
+    service.getMovieByImdbId = vi.fn().mockResolvedValue(null);
+    await expect(
+      service.createMovie(
+        { imdbId: 'tt2442560', title: 'Peaky Blinders' },
+        'user_123',
+      ),
+    ).rejects.toThrow(/TV series.*Peaky Blinders/i);
   });
 });

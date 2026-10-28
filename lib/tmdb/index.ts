@@ -1,6 +1,7 @@
 /**
  * TMDB API client for metadata retrieval.
- * Uses TMDB Find by ID with external_source=imdb_id.
+ * Uses TMDB Find by ID with external_source=imdb_id,
+ * with upfront title type validation for TV series & non-movie content.
  */
 
 export interface MovieMetadata {
@@ -57,17 +58,126 @@ const TMDB_GENRE_MAP: Record<number, string> = {
   10770: 'TV Movie',
 };
 
+/**
+ * Checks whether an IMDb ID is a movie or an unsupported type (TV series, episode, game, etc.)
+ * using IMDb's public suggestion endpoint.
+ */
+export async function checkImdbTitleType(imdbId: string): Promise<{
+  isKnown: boolean;
+  isMovie: boolean;
+  title?: string;
+  year?: number;
+  posterUrl?: string;
+  typeName?: string;
+}> {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 4000);
+    const res = await fetch(
+      `https://v2.sg.media-imdb.com/suggests/t/${encodeURIComponent(imdbId.toLowerCase())}.json`,
+      {
+        signal: controller.signal,
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+          Accept: '*/*',
+        },
+      },
+    );
+    clearTimeout(timeout);
+
+    if (!res.ok) return { isKnown: false, isMovie: true };
+
+    const text = await res.text();
+    const start = text.indexOf('(');
+    const end = text.lastIndexOf(')');
+    if (start === -1 || end === -1) return { isKnown: false, isMovie: true };
+
+    const data = JSON.parse(text.substring(start + 1, end));
+    const items = data?.d;
+    if (!Array.isArray(items) || items.length === 0) {
+      return { isKnown: false, isMovie: true };
+    }
+
+    const exact = items.find(
+      (item: any) => item.id && item.id.toLowerCase() === imdbId.toLowerCase(),
+    );
+    if (!exact) {
+      return { isKnown: false, isMovie: true };
+    }
+
+    const qid = (exact.qid || '').toLowerCase();
+    const q = (exact.q || '').toLowerCase();
+
+    const isTvOrUnsupported =
+      qid.includes('tv') ||
+      qid.includes('series') ||
+      qid.includes('episode') ||
+      qid.includes('podcast') ||
+      qid.includes('game') ||
+      q.includes('tv') ||
+      q.includes('series') ||
+      q.includes('episode') ||
+      q.includes('game') ||
+      q.includes('podcast');
+
+    return {
+      isKnown: true,
+      isMovie: !isTvOrUnsupported,
+      title: exact.l,
+      year: exact.y,
+      posterUrl: Array.isArray(exact.i) && exact.i[0] ? exact.i[0] : undefined,
+      typeName: exact.q || exact.qid,
+    };
+  } catch {
+    return { isKnown: false, isMovie: true };
+  }
+}
+
 export async function fetchMovieMetadataByImdbId(
   imdbId: string,
   apiKeyOrToken?: string | null,
 ): Promise<FetchMetadataResult> {
   const canonicalUrl = `https://www.imdb.com/title/${imdbId}/`;
+
+  // Always check title type first (handles TV series / episodes / podcasts / games immediately)
+  const imdbInfo = await checkImdbTitleType(imdbId);
+  if (imdbInfo.isKnown && !imdbInfo.isMovie) {
+    const titleLabel = imdbInfo.title ? ` (${imdbInfo.title})` : '';
+    const typeLabel = imdbInfo.typeName ? ` a ${imdbInfo.typeName}` : ' a TV series';
+    return {
+      success: false,
+      error: `This IMDb ID belongs to${typeLabel}${titleLabel}. Movie Watchlist Manager supports movies only.`,
+      isUnsupportedType: true,
+      canFallbackToManual: false,
+    };
+  }
+
   const token =
     apiKeyOrToken ||
     process.env.TMDB_API_KEY ||
     process.env.TMDB_READ_ACCESS_TOKEN;
 
   if (!token) {
+    // If no TMDB token, but we have movie metadata from IMDb suggestion endpoint, return it
+    if (imdbInfo.isKnown && imdbInfo.isMovie && imdbInfo.title) {
+      return {
+        success: true,
+        data: {
+          imdbId,
+          imdbUrl: canonicalUrl,
+          tmdbId: null,
+          title: imdbInfo.title,
+          originalTitle: null,
+          releaseDate: imdbInfo.year ? `${imdbInfo.year}-01-01` : null,
+          releaseYear: imdbInfo.year || null,
+          posterPath: imdbInfo.posterUrl || null,
+          overview: null,
+          runtimeMinutes: null,
+          genres: [],
+        },
+      };
+    }
+
     return {
       success: false,
       error: 'TMDB API key is not configured on the server.',
@@ -128,7 +238,7 @@ export async function fetchMovieMetadataByImdbId(
 
     const data: any = await response.json();
 
-    // Check for TV shows or unsupported types
+    // Check for TV shows or unsupported types from TMDB response
     const hasTv =
       (data.tv_results && data.tv_results.length > 0) ||
       (data.tv_episode_results && data.tv_episode_results.length > 0) ||
@@ -137,16 +247,36 @@ export async function fetchMovieMetadataByImdbId(
     const movie = data.movie_results?.[0];
 
     if (!movie && hasTv) {
+      const tvTitle = data.tv_results?.[0]?.name || imdbInfo.title;
       return {
         success: false,
-        error:
-          'This IMDb ID belongs to a TV series, season, or episode. Movie Watchlist Manager supports movies only.',
+        error: `This IMDb ID belongs to a TV series${tvTitle ? ` (${tvTitle})` : ''}. Movie Watchlist Manager supports movies only.`,
         isUnsupportedType: true,
         canFallbackToManual: false,
       };
     }
 
     if (!movie) {
+      // Fallback to IMDb basic info if available
+      if (imdbInfo.isKnown && imdbInfo.isMovie && imdbInfo.title) {
+        return {
+          success: true,
+          data: {
+            imdbId,
+            imdbUrl: canonicalUrl,
+            tmdbId: null,
+            title: imdbInfo.title,
+            originalTitle: null,
+            releaseDate: imdbInfo.year ? `${imdbInfo.year}-01-01` : null,
+            releaseYear: imdbInfo.year || null,
+            posterPath: imdbInfo.posterUrl || null,
+            overview: null,
+            runtimeMinutes: null,
+            genres: [],
+          },
+        };
+      }
+
       return {
         success: false,
         error: 'No movie found for this IMDb ID on TMDB.',
