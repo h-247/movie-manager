@@ -211,7 +211,7 @@ export function MovieDetailsDialog({
                 /* Metadata Edit Form */
                 <div className="space-y-3 rounded-xl border border-neutral-700 bg-[#1A1A1A] p-4 text-xs">
                   <h4 className="font-semibold text-white">
-                    Edit Movie Metadata
+                    {movie.mediaType === 'SERIES' ? 'Edit TV Series Details' : 'Edit Movie Metadata'}
                   </h4>
                   <div>
                     <label className="block mb-1 text-neutral-400 font-medium">
@@ -272,6 +272,52 @@ export function MovieDetailsDialog({
                       />
                     </div>
                   </div>
+
+                  {movie.mediaType === 'SERIES' && (
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 border-t border-neutral-800">
+                      <div>
+                        <label className="block mb-1 text-neutral-400 font-medium">Total Seasons</label>
+                        <input
+                          type="number"
+                          value={editTotalSeasons}
+                          onChange={(e) => setEditTotalSeasons(e.target.value)}
+                          placeholder="e.g. 2"
+                          className="w-full rounded bg-[#262626] border border-neutral-700 px-2.5 py-1.5 text-[#ECECEC] focus:border-white focus:outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="block mb-1 text-neutral-400 font-medium">Total Episodes</label>
+                        <input
+                          type="number"
+                          value={editTotalEpisodes}
+                          onChange={(e) => setEditTotalEpisodes(e.target.value)}
+                          placeholder="e.g. 16"
+                          className="w-full rounded bg-[#262626] border border-neutral-700 px-2.5 py-1.5 text-[#ECECEC] focus:border-white focus:outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="block mb-1 text-neutral-400 font-medium">Current Season</label>
+                        <input
+                          type="number"
+                          value={editCurrentSeason}
+                          onChange={(e) => setEditCurrentSeason(e.target.value)}
+                          placeholder="e.g. 1"
+                          className="w-full rounded bg-[#262626] border border-neutral-700 px-2.5 py-1.5 text-[#ECECEC] focus:border-white focus:outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="block mb-1 text-neutral-400 font-medium">Current Episode</label>
+                        <input
+                          type="number"
+                          value={editCurrentEpisode}
+                          onChange={(e) => setEditCurrentEpisode(e.target.value)}
+                          placeholder="e.g. 1"
+                          className="w-full rounded bg-[#262626] border border-neutral-700 px-2.5 py-1.5 text-[#ECECEC] focus:border-white focus:outline-none"
+                        />
+                      </div>
+                    </div>
+                  )}
+
                   <div>
                     <label className="block mb-1 text-neutral-400 font-medium">
                       Genres (comma separated)
@@ -378,41 +424,128 @@ export function MovieDetailsDialog({
                     )}
                   </div>
 
-                  {/* Series Watch Progress (when Doing) */}
-                  {movie.mediaType === 'SERIES' && (
-                    <div className="rounded-lg border border-neutral-800 bg-[#1A1A1A] p-2.5 flex items-center justify-between text-xs">
-                      <div>
-                        <span className="text-neutral-400">Progress: </span>
-                        <span className="font-semibold text-white">
-                          Season {movie.currentSeason || 1}, Episode {movie.currentEpisode || 1}
-                        </span>
+                  {/* Series Watch Progress */}
+                  {movie.mediaType === 'SERIES' && (() => {
+                    const totalSeas = movie.totalSeasons || 1;
+                    const totalEps = movie.totalEpisodes || null;
+                    const epsPerSeason = totalEps && totalSeas ? Math.ceil(totalEps / totalSeas) : (totalEps || 50);
+
+                    // Clamp current season between 1 and totalSeas
+                    const curSeason = Math.min(Math.max(movie.currentSeason || 1, 1), totalSeas);
+                    // Clamp current episode between 1 and epsPerSeason
+                    const curEpisode = Math.min(Math.max(movie.currentEpisode || 1, 1), epsPerSeason);
+
+                    const handleSeasonChange = (delta: number) => {
+                      const nextS = Math.min(Math.max(curSeason + delta, 1), totalSeas);
+                      if (nextS !== curSeason) {
+                        onUpdate(movie.id, { currentSeason: nextS, currentEpisode: 1 });
+                      }
+                    };
+
+                    const handleEpisodeChange = (delta: number) => {
+                      const nextE = curEpisode + delta;
+                      if (nextE > epsPerSeason) {
+                        // Rollover to next season if available
+                        if (curSeason < totalSeas) {
+                          onUpdate(movie.id, { currentSeason: curSeason + 1, currentEpisode: 1 });
+                        } else {
+                          // Finished all seasons & episodes -> Mark as Done
+                          onUpdate(movie.id, { status: 'DONE', currentEpisode: epsPerSeason });
+                        }
+                      } else if (nextE < 1) {
+                        // Rollover to previous season if available
+                        if (curSeason > 1) {
+                          onUpdate(movie.id, { currentSeason: curSeason - 1, currentEpisode: epsPerSeason });
+                        }
+                      } else {
+                        onUpdate(movie.id, { currentEpisode: nextE });
+                      }
+                    };
+
+                    // Progress percentage across all episodes if known
+                    const totalWatched = (curSeason - 1) * epsPerSeason + curEpisode;
+                    const progressPercent = totalEps ? Math.min(Math.round((totalWatched / totalEps) * 100), 100) : null;
+
+                    return (
+                      <div className="rounded-xl border border-neutral-800 bg-[#1A1A1A] p-3 space-y-2.5 text-xs">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[11px] font-semibold uppercase tracking-wider text-neutral-400">
+                              Series Progress
+                            </span>
+                            {progressPercent !== null && (
+                              <span className="rounded bg-purple-500/20 px-1.5 py-0.5 text-[10px] font-semibold text-purple-300">
+                                {progressPercent}%
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-neutral-400 text-[11px]">
+                            Season <strong className="text-white">{curSeason}</strong>{movie.totalSeasons ? `/${movie.totalSeasons}` : ''}
+                            {' • '}
+                            Episode <strong className="text-white">{curEpisode}</strong>{epsPerSeason ? `/${epsPerSeason}` : ''}
+                          </span>
+                        </div>
+
+                        {progressPercent !== null && (
+                          <div className="h-1.5 w-full overflow-hidden rounded-full bg-neutral-800">
+                            <div
+                              className="h-full rounded-full bg-purple-500 transition-all duration-300"
+                              style={{ width: `${progressPercent}%` }}
+                            />
+                          </div>
+                        )}
+
+                        <div className="flex items-center justify-between gap-2 pt-1 border-t border-neutral-800/60">
+                          {/* Season Stepper */}
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-neutral-400 text-[11px]">Season:</span>
+                            <button
+                              type="button"
+                              disabled={curSeason <= 1}
+                              onClick={() => handleSeasonChange(-1)}
+                              className="flex h-6 w-6 items-center justify-center rounded bg-[#262626] border border-neutral-700 text-neutral-300 hover:text-white disabled:opacity-40 transition-colors"
+                            >
+                              -
+                            </button>
+                            <span className="min-w-[28px] text-center font-bold text-white">
+                              {curSeason}
+                            </span>
+                            <button
+                              type="button"
+                              disabled={curSeason >= totalSeas}
+                              onClick={() => handleSeasonChange(1)}
+                              className="flex h-6 w-6 items-center justify-center rounded bg-[#262626] border border-neutral-700 text-neutral-300 hover:text-white disabled:opacity-40 transition-colors"
+                            >
+                              +
+                            </button>
+                          </div>
+
+                          {/* Episode Stepper */}
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-neutral-400 text-[11px]">Episode:</span>
+                            <button
+                              type="button"
+                              disabled={curSeason <= 1 && curEpisode <= 1}
+                              onClick={() => handleEpisodeChange(-1)}
+                              className="flex h-6 w-6 items-center justify-center rounded bg-[#262626] border border-neutral-700 text-neutral-300 hover:text-white disabled:opacity-40 transition-colors"
+                            >
+                              -
+                            </button>
+                            <span className="min-w-[28px] text-center font-bold text-white">
+                              {curEpisode}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleEpisodeChange(1)}
+                              className="flex h-6 items-center justify-center rounded bg-purple-600 px-2 font-semibold text-white hover:bg-purple-500 transition-colors"
+                            >
+                              + Ep
+                            </button>
+                          </div>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-1.5">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const cur = movie.currentEpisode || 1;
-                            if (cur > 1) {
-                              onUpdate(movie.id, { currentEpisode: cur - 1 });
-                            }
-                          }}
-                          className="rounded bg-[#262626] border border-neutral-700 px-2 py-0.5 text-neutral-300 hover:text-white"
-                        >
-                          - Ep
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const cur = movie.currentEpisode || 1;
-                            onUpdate(movie.id, { currentEpisode: cur + 1 });
-                          }}
-                          className="rounded bg-purple-600 px-2 py-0.5 font-semibold text-white hover:bg-purple-500"
-                        >
-                          + Ep
-                        </button>
-                      </div>
-                    </div>
-                  )}
+                    );
+                  })()}
 
                   {/* Genres */}
                   {genresList.length > 0 && (
