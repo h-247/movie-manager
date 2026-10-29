@@ -36,6 +36,7 @@ export interface CreateMovieInput {
   notes?: string | null;
   startedAt?: string | null;
   completedAt?: string | null;
+  forceAsMovie?: boolean;
 }
 
 export interface UpdateMovieInput {
@@ -162,16 +163,18 @@ export class MovieService {
       throw err;
     }
 
-    // Verify title is a movie and not a TV series/episode/game
-    const titleCheck = await checkImdbTitleType(imdbId);
-    if (titleCheck.isKnown && !titleCheck.isMovie) {
-      const titleLabel = titleCheck.title ? ` (${titleCheck.title})` : '';
-      const typeLabel = titleCheck.typeName ? ` a ${titleCheck.typeName}` : ' a TV series';
-      const err = new Error(
-        `This IMDb ID belongs to${typeLabel}${titleLabel}. Movie Watchlist Manager supports movies only.`,
-      );
-      (err as any).code = 'UNSUPPORTED_TITLE_TYPE';
-      throw err;
+    // Verify title is a movie and not a TV series/episode/game unless forceAsMovie is explicitly enabled
+    if (!input.forceAsMovie) {
+      const titleCheck = await checkImdbTitleType(imdbId);
+      if (titleCheck.isKnown && !titleCheck.isMovie) {
+        const titleLabel = titleCheck.title ? ` (${titleCheck.title})` : '';
+        const typeLabel = titleCheck.typeName ? ` a ${titleCheck.typeName}` : ' a TV series';
+        const err = new Error(
+          `This IMDb ID belongs to${typeLabel}${titleLabel}. Movie Watchlist Manager supports movies only.`,
+        );
+        (err as any).code = 'UNSUPPORTED_TITLE_TYPE';
+        throw err;
+      }
     }
 
     const id = crypto.randomUUID();

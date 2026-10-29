@@ -49,6 +49,10 @@ export async function POST(request: Request) {
       error: !metaResult.success ? metaResult.error : null,
       isUnsupportedType: !metaResult.success && !!metaResult.isUnsupportedType,
       canFallbackToManual: !metaResult.success && !!metaResult.canFallbackToManual,
+      unsupportedTitleInfo:
+        !metaResult.success && 'unsupportedTitleInfo' in metaResult
+          ? metaResult.unsupportedTitleInfo
+          : null,
     });
   } catch (error: any) {
     return NextResponse.json(

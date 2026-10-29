@@ -378,4 +378,29 @@ describe('Movie Watchlist Integration Tests', () => {
       ),
     ).rejects.toThrow(/TV series.*Peaky Blinders/i);
   });
+
+  it('13. Provides unsupportedTitleInfo for Crew Girl (tt38218082) and allows forceAsMovie import', async () => {
+    const res = await tmdbModule.fetchMovieMetadataByImdbId('tt38218082');
+    expect(res.success).toBe(false);
+    if (!res.success) {
+      expect(res.isUnsupportedType).toBe(true);
+      expect(res.error).toMatch(/TV series.*Crew Girl/i);
+      expect(res.unsupportedTitleInfo?.title).toMatch(/Crew Girl/i);
+    }
+
+    // Verify createMovie succeeds with forceAsMovie: true
+    service.getMovieByImdbId = vi.fn().mockResolvedValue(null);
+    const movie = await service.createMovie(
+      {
+        imdbId: 'tt38218082',
+        title: 'Crew Girl',
+        releaseYear: 2026,
+        forceAsMovie: true,
+      },
+      'user_123',
+    );
+    expect(movie.title).toBe('Crew Girl');
+    expect(movie.imdbId).toBe('tt38218082');
+    expect(movie.status).toBe('TO_DO');
+  });
 });

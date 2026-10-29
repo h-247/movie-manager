@@ -24,6 +24,7 @@ export const createMovieSchema = z.object({
   notes: z.string().nullable().optional(),
   startedAt: z.string().nullable().optional(),
   completedAt: z.string().nullable().optional(),
+  forceAsMovie: z.boolean().optional(),
 });
 
 export const updateMovieSchema = z.object({

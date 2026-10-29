@@ -25,6 +25,12 @@ export type FetchMetadataResult =
       error: string;
       isUnsupportedType?: boolean;
       canFallbackToManual?: boolean;
+      unsupportedTitleInfo?: {
+        title?: string;
+        year?: number;
+        posterUrl?: string;
+        typeName?: string;
+      };
     };
 
 const TMDB_IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w500';
@@ -108,17 +114,20 @@ export async function checkImdbTitleType(imdbId: string): Promise<{
     const qid = (exact.qid || '').toLowerCase();
     const q = (exact.q || '').toLowerCase();
 
+    const isTvMovie = qid.includes('tvmovie') || q.includes('tv movie');
+
     const isTvOrUnsupported =
-      qid.includes('tv') ||
-      qid.includes('series') ||
-      qid.includes('episode') ||
-      qid.includes('podcast') ||
-      qid.includes('game') ||
-      q.includes('tv') ||
-      q.includes('series') ||
-      q.includes('episode') ||
-      q.includes('game') ||
-      q.includes('podcast');
+      !isTvMovie &&
+      (qid.includes('tv') ||
+        qid.includes('series') ||
+        qid.includes('episode') ||
+        qid.includes('podcast') ||
+        qid.includes('game') ||
+        q.includes('tv') ||
+        q.includes('series') ||
+        q.includes('episode') ||
+        q.includes('game') ||
+        q.includes('podcast'));
 
     return {
       isKnown: true,
@@ -149,6 +158,12 @@ export async function fetchMovieMetadataByImdbId(
       error: `This IMDb ID belongs to${typeLabel}${titleLabel}. Movie Watchlist Manager supports movies only.`,
       isUnsupportedType: true,
       canFallbackToManual: false,
+      unsupportedTitleInfo: {
+        title: imdbInfo.title,
+        year: imdbInfo.year,
+        posterUrl: imdbInfo.posterUrl,
+        typeName: imdbInfo.typeName,
+      },
     };
   }
 
@@ -248,11 +263,23 @@ export async function fetchMovieMetadataByImdbId(
 
     if (!movie && hasTv) {
       const tvTitle = data.tv_results?.[0]?.name || imdbInfo.title;
+      const tvPoster = data.tv_results?.[0]?.poster_path
+        ? getFullPosterUrl(data.tv_results[0].poster_path)
+        : imdbInfo.posterUrl;
+      const tvYear = data.tv_results?.[0]?.first_air_date
+        ? parseInt(data.tv_results[0].first_air_date.slice(0, 4), 10)
+        : imdbInfo.year;
       return {
         success: false,
         error: `This IMDb ID belongs to a TV series${tvTitle ? ` (${tvTitle})` : ''}. Movie Watchlist Manager supports movies only.`,
         isUnsupportedType: true,
         canFallbackToManual: false,
+        unsupportedTitleInfo: {
+          title: tvTitle,
+          year: tvYear,
+          posterUrl: tvPoster || undefined,
+          typeName: 'TV series',
+        },
       };
     }
 
