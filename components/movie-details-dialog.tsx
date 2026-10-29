@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import {
   X,
   ExternalLink,
-  Star,
   Calendar,
   Clock,
   Trash2,
@@ -10,7 +9,6 @@ import {
   Save,
   Check,
   Film,
-  RotateCcw,
 } from 'lucide-react';
 import type { Movie, WatchStatus } from '@/db/schema';
 import { StatusBadge } from './status-badge';
@@ -38,12 +36,6 @@ export function MovieDetailsDialog({
   const [isSaving, setIsSaving] = useState(false);
   const [imageError, setImageError] = useState(false);
 
-  // Editable fields
-  const [rating, setRating] = useState<number | null>(null);
-  const [notes, setNotes] = useState('');
-  const [startedDate, setStartedDate] = useState('');
-  const [completedDate, setCompletedDate] = useState('');
-
   // Editable metadata fields
   const [editTitle, setEditTitle] = useState('');
   const [editOriginalTitle, setEditOriginalTitle] = useState('');
@@ -61,11 +53,6 @@ export function MovieDetailsDialog({
 
   useEffect(() => {
     if (movie) {
-      setRating(movie.personalRating ?? null);
-      setNotes(movie.notes ?? '');
-      setStartedDate(movie.startedAt ? movie.startedAt.slice(0, 10) : '');
-      setCompletedDate(movie.completedAt ? movie.completedAt.slice(0, 10) : '');
-
       setEditTitle(movie.title);
       setEditOriginalTitle(movie.originalTitle ?? '');
       setEditMediaType(movie.mediaType || 'MOVIE');
@@ -109,20 +96,6 @@ export function MovieDetailsDialog({
     setIsSaving(true);
     try {
       await onUpdate(movie.id, { status: newStatus });
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleSaveNotesAndDates = async () => {
-    setIsSaving(true);
-    try {
-      await onUpdate(movie.id, {
-        personalRating: rating,
-        notes: notes || null,
-        startedAt: startedDate ? new Date(startedDate).toISOString() : null,
-        completedAt: completedDate ? new Date(completedDate).toISOString() : null,
-      });
     } finally {
       setIsSaving(false);
     }
@@ -504,104 +477,6 @@ export function MovieDetailsDialog({
                   })}
                 </div>
               </div>
-            </div>
-          </div>
-
-          {/* Personal Information Section: Rating, Dates, Notes */}
-          <div className="rounded-xl border border-neutral-800 bg-[#1A1A1A] p-4 sm:p-5 space-y-4">
-            <h3 className="text-sm font-semibold uppercase tracking-wider text-neutral-300">
-              Personal Tracking
-            </h3>
-
-            {/* Personal Rating (1-10) */}
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-medium text-neutral-400">
-                  Personal Rating
-                </span>
-                {rating !== null && (
-                  <button
-                    type="button"
-                    onClick={() => setRating(null)}
-                    className="flex items-center gap-1 text-[11px] text-neutral-400 hover:text-red-400"
-                  >
-                    <RotateCcw className="h-3 w-3" />
-                    Clear Rating
-                  </button>
-                )}
-              </div>
-              <div className="flex flex-wrap items-center gap-1.5">
-                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((starVal) => {
-                  const isFilled = rating !== null && starVal <= rating;
-                  return (
-                    <button
-                      key={starVal}
-                      type="button"
-                      onClick={() => setRating(starVal)}
-                      className={`flex h-8 w-8 items-center justify-center rounded-lg border text-xs font-semibold transition-all ${
-                        isFilled
-                          ? 'border-amber-400 bg-amber-400/20 text-amber-300'
-                          : 'border-neutral-800 bg-[#262626] text-neutral-400 hover:border-neutral-700 hover:text-white'
-                      }`}
-                    >
-                      {starVal}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Viewing Dates */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-              <div>
-                <label className="block text-xs font-medium text-neutral-400 mb-1">
-                  Started Watching (Doing Date)
-                </label>
-                <input
-                  type="date"
-                  value={startedDate}
-                  onChange={(e) => setStartedDate(e.target.value)}
-                  className="w-full rounded-lg border border-neutral-800 bg-[#262626] px-3 py-1.5 text-xs text-[#ECECEC] focus:border-neutral-600 focus:outline-none"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-neutral-400 mb-1">
-                  Finished Watching (Done Date)
-                </label>
-                <input
-                  type="date"
-                  value={completedDate}
-                  onChange={(e) => setCompletedDate(e.target.value)}
-                  className="w-full rounded-lg border border-neutral-800 bg-[#262626] px-3 py-1.5 text-xs text-[#ECECEC] focus:border-neutral-600 focus:outline-none"
-                />
-              </div>
-            </div>
-
-            {/* Notes */}
-            <div>
-              <label className="block text-xs font-medium text-neutral-400 mb-1">
-                Personal Notes
-              </label>
-              <textarea
-                rows={3}
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="Write your thoughts, memorable quotes, or viewing plans..."
-                className="w-full rounded-lg border border-neutral-800 bg-[#262626] p-3 text-xs text-[#ECECEC] placeholder-neutral-500 focus:border-neutral-600 focus:outline-none"
-              />
-            </div>
-
-            {/* Save Personal Tracking Button */}
-            <div className="flex justify-end pt-1">
-              <button
-                type="button"
-                disabled={isSaving}
-                onClick={handleSaveNotesAndDates}
-                className="flex items-center gap-1.5 rounded-lg bg-white px-4 py-2 text-xs font-semibold text-black hover:bg-neutral-200 transition-colors"
-              >
-                <Save className="h-3.5 w-3.5" />
-                Save Notes & Tracking
-              </button>
             </div>
           </div>
         </div>

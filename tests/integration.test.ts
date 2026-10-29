@@ -421,6 +421,8 @@ describe('Movie Watchlist Integration Tests', () => {
     if (res.success) {
       expect(res.data.mediaType).toBe('SERIES');
       expect(res.data.title).toMatch(/Crew Girl/i);
+      expect(res.data.totalSeasons).toBeGreaterThanOrEqual(1);
+      expect(res.data.totalEpisodes).toBeGreaterThanOrEqual(1);
     }
 
     // Verify createMovie succeeds with mediaType: 'SERIES'

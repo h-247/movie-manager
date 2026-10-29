@@ -70,16 +70,122 @@ const TMDB_GENRE_MAP: Record<number, string> = {
 /**
  * Checks whether an IMDb ID is a movie or series using IMDb's public suggestion endpoint.
  */
-export async function checkImdbTitleType(imdbId: string): Promise<{
+export interface ImdbTitleInfo {
   isKnown: boolean;
   isMovie: boolean;
   isSeries: boolean;
   mediaType: 'MOVIE' | 'SERIES';
   title?: string;
+  originalTitle?: string;
   year?: number;
+  releaseDate?: string;
   posterUrl?: string;
   typeName?: string;
-}> {
+  overview?: string;
+  runtimeMinutes?: number;
+  totalSeasons?: number | null;
+  totalEpisodes?: number | null;
+  genres?: string[];
+}
+
+export async function checkImdbTitleType(imdbId: string): Promise<ImdbTitleInfo> {
+  // 1. Try IMDb's GraphQL service for detailed title metadata including seasons & episodes
+  try {
+    const query = `
+      query TitleDetails($id: ID!) {
+        title(id: $id) {
+          id
+          titleText { text }
+          originalTitleText { text }
+          titleType { id text isSeries }
+          releaseYear { year }
+          releaseDate { day month year }
+          primaryImage { url }
+          genres { genres { text } }
+          plot { plotText { plainText } }
+          runtime { seconds }
+          episodes {
+            episodes(first: 1) { total }
+            seasons { number }
+          }
+        }
+      }
+    `;
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+    const gqlRes = await fetch('https://api.graphql.imdb.com/', {
+      method: 'POST',
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+        'Content-Type': 'application/json',
+        'x-imdb-client-name': 'imdb-web-next',
+      },
+      body: JSON.stringify({ query, variables: { id: imdbId } }),
+      signal: controller.signal,
+    });
+    clearTimeout(timeout);
+
+    if (gqlRes.ok) {
+      const gqlData: any = await gqlRes.json();
+      const t = gqlData.data?.title;
+      if (t) {
+        const isSeries = Boolean(
+          t.titleType?.isSeries ||
+            t.titleType?.id === 'tvSeries' ||
+            t.titleType?.id === 'tvMiniSeries' ||
+            t.titleType?.id === 'tvSpecial',
+        );
+        const mediaType: 'MOVIE' | 'SERIES' = isSeries ? 'SERIES' : 'MOVIE';
+
+        let releaseDate: string | undefined = undefined;
+        if (t.releaseDate?.year && t.releaseDate?.month && t.releaseDate?.day) {
+          const m = String(t.releaseDate.month).padStart(2, '0');
+          const d = String(t.releaseDate.day).padStart(2, '0');
+          releaseDate = `${t.releaseDate.year}-${m}-${d}`;
+        }
+
+        const seasonsList = t.episodes?.seasons;
+        let totalSeasons: number | null = null;
+        if (Array.isArray(seasonsList) && seasonsList.length > 0) {
+          const valid = seasonsList.filter(
+            (s: any) => typeof s.number === 'number' && s.number > 0,
+          );
+          totalSeasons = valid.length || seasonsList.length;
+        }
+
+        const totalEpisodes: number | null = t.episodes?.episodes?.total ?? null;
+
+        const genres = Array.isArray(t.genres?.genres)
+          ? t.genres.genres.map((g: any) => g.text).filter(Boolean)
+          : [];
+
+        return {
+          isKnown: true,
+          isMovie: !isSeries,
+          isSeries,
+          mediaType,
+          title: t.titleText?.text || t.originalTitleText?.text,
+          originalTitle: t.originalTitleText?.text,
+          year: t.releaseYear?.year,
+          releaseDate,
+          posterUrl: t.primaryImage?.url,
+          typeName: t.titleType?.text || (isSeries ? 'TV Series' : 'Movie'),
+          overview: t.plot?.plotText?.plainText,
+          runtimeMinutes: t.runtime?.seconds
+            ? Math.round(t.runtime.seconds / 60)
+            : undefined,
+          totalSeasons,
+          totalEpisodes,
+          genres,
+        };
+      }
+    }
+  } catch {
+    // Fallback below
+  }
+
+  // 2. Fallback to IMDb suggestions endpoint + TVMaze for seasons/episodes
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 4000);
@@ -130,6 +236,34 @@ export async function checkImdbTitleType(imdbId: string): Promise<{
 
     const mediaType: 'MOVIE' | 'SERIES' = isSeries ? 'SERIES' : 'MOVIE';
 
+    let totalSeasons: number | null = null;
+    let totalEpisodes: number | null = null;
+
+    if (isSeries) {
+      try {
+        const tvMazeRes = await fetch(
+          `https://api.tvmaze.com/lookup/shows?imdb=${encodeURIComponent(imdbId)}`,
+          { headers: { 'User-Agent': 'MovieWatchlist/1.0' } },
+        );
+        if (tvMazeRes.ok) {
+          const tvData: any = await tvMazeRes.json();
+          const sRes = await fetch(
+            `https://api.tvmaze.com/shows/${tvData.id}/seasons`,
+          );
+          if (sRes.ok) {
+            const seasons: any[] = await sRes.json();
+            totalSeasons = seasons.length;
+            totalEpisodes = seasons.reduce(
+              (acc, s) => acc + (s.episodeOrder || 0),
+              0,
+            );
+          }
+        }
+      } catch {
+        // ignore
+      }
+    }
+
     return {
       isKnown: true,
       isMovie: !isSeries,
@@ -139,6 +273,8 @@ export async function checkImdbTitleType(imdbId: string): Promise<{
       year: exact.y,
       posterUrl: Array.isArray(exact.i) && exact.i[0] ? exact.i[0] : undefined,
       typeName: exact.q || exact.qid,
+      totalSeasons,
+      totalEpisodes,
     };
   } catch {
     return { isKnown: false, isMovie: true, isSeries: false, mediaType: 'MOVIE' };
@@ -159,7 +295,7 @@ export async function fetchMovieMetadataByImdbId(
     process.env.TMDB_READ_ACCESS_TOKEN;
 
   if (!token) {
-    // If no TMDB token, but we have metadata from IMDb suggestion endpoint, return it
+    // If no TMDB token, return rich metadata retrieved from IMDb directly
     if (imdbInfo.isKnown && imdbInfo.title) {
       return {
         success: true,
@@ -168,16 +304,16 @@ export async function fetchMovieMetadataByImdbId(
           imdbUrl: canonicalUrl,
           tmdbId: null,
           title: imdbInfo.title,
-          originalTitle: null,
+          originalTitle: imdbInfo.originalTitle || null,
           mediaType: imdbInfo.mediaType,
-          releaseDate: imdbInfo.year ? `${imdbInfo.year}-01-01` : null,
+          releaseDate: imdbInfo.releaseDate || (imdbInfo.year ? `${imdbInfo.year}-01-01` : null),
           releaseYear: imdbInfo.year || null,
           posterPath: imdbInfo.posterUrl || null,
-          overview: null,
-          runtimeMinutes: null,
-          totalSeasons: null,
-          totalEpisodes: null,
-          genres: [],
+          overview: imdbInfo.overview || null,
+          runtimeMinutes: imdbInfo.runtimeMinutes || null,
+          totalSeasons: imdbInfo.totalSeasons ?? null,
+          totalEpisodes: imdbInfo.totalEpisodes ?? null,
+          genres: imdbInfo.genres || [],
         },
       };
     }
@@ -316,10 +452,10 @@ export async function fetchMovieMetadataByImdbId(
           releaseYear,
           posterPath: tv.poster_path ? getFullPosterUrl(tv.poster_path) : imdbInfo.posterUrl || null,
           overview: tv.overview || null,
-          runtimeMinutes,
-          totalSeasons,
-          totalEpisodes,
-          genres,
+          runtimeMinutes: runtimeMinutes || imdbInfo.runtimeMinutes || null,
+          totalSeasons: totalSeasons ?? imdbInfo.totalSeasons ?? null,
+          totalEpisodes: totalEpisodes ?? imdbInfo.totalEpisodes ?? null,
+          genres: genres.length > 0 ? genres : (imdbInfo.genres || []),
         },
       };
     }
@@ -404,16 +540,16 @@ export async function fetchMovieMetadataByImdbId(
           imdbUrl: canonicalUrl,
           tmdbId: null,
           title: imdbInfo.title,
-          originalTitle: null,
+          originalTitle: imdbInfo.originalTitle || null,
           mediaType: imdbInfo.mediaType,
-          releaseDate: imdbInfo.year ? `${imdbInfo.year}-01-01` : null,
+          releaseDate: imdbInfo.releaseDate || (imdbInfo.year ? `${imdbInfo.year}-01-01` : null),
           releaseYear: imdbInfo.year || null,
           posterPath: imdbInfo.posterUrl || null,
-          overview: null,
-          runtimeMinutes: null,
-          totalSeasons: null,
-          totalEpisodes: null,
-          genres: [],
+          overview: imdbInfo.overview || null,
+          runtimeMinutes: imdbInfo.runtimeMinutes || null,
+          totalSeasons: imdbInfo.totalSeasons ?? null,
+          totalEpisodes: imdbInfo.totalEpisodes ?? null,
+          genres: imdbInfo.genres || [],
         },
       };
     }
