@@ -26,6 +26,7 @@ export const createMovieSchema = z.object({
   currentSeason: z.number().int().positive().nullable().optional(),
   currentEpisode: z.number().int().positive().nullable().optional(),
   genres: z.union([z.array(z.string()), z.string()]).optional(),
+  countries: z.union([z.array(z.string()), z.string()]).optional().nullable(),
   status: watchStatusSchema.default('TO_DO'),
   personalRating: z.number().int().min(1).max(10).nullable().optional(),
   notes: z.string().nullable().optional(),
@@ -53,6 +54,7 @@ export const updateMovieSchema = z.object({
   currentSeason: z.number().int().positive().nullable().optional(),
   currentEpisode: z.number().int().positive().nullable().optional(),
   genres: z.union([z.array(z.string()), z.string()]).optional(),
+  countries: z.union([z.array(z.string()), z.string()]).optional().nullable(),
 });
 
 export const previewInputSchema = z.object({

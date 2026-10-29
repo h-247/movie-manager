@@ -19,6 +19,7 @@ export interface MovieMetadata {
   totalSeasons?: number | null;
   totalEpisodes?: number | null;
   genres: string[];
+  countries?: string[];
 }
 
 export type FetchMetadataResult =
@@ -86,6 +87,7 @@ export interface ImdbTitleInfo {
   totalSeasons?: number | null;
   totalEpisodes?: number | null;
   genres?: string[];
+  countries?: string[];
 }
 
 export async function checkImdbTitleType(imdbId: string): Promise<ImdbTitleInfo> {
@@ -102,6 +104,7 @@ export async function checkImdbTitleType(imdbId: string): Promise<ImdbTitleInfo>
           releaseDate { day month year }
           primaryImage { url }
           genres { genres { text } }
+          countriesOfOrigin { countries { id text } }
           plot { plotText { plainText } }
           runtime { seconds }
           episodes {
@@ -160,6 +163,10 @@ export async function checkImdbTitleType(imdbId: string): Promise<ImdbTitleInfo>
           ? t.genres.genres.map((g: any) => g.text).filter(Boolean)
           : [];
 
+        const countries = Array.isArray(t.countriesOfOrigin?.countries)
+          ? t.countriesOfOrigin.countries.map((c: any) => c.text).filter(Boolean)
+          : [];
+
         return {
           isKnown: true,
           isMovie: !isSeries,
@@ -178,6 +185,7 @@ export async function checkImdbTitleType(imdbId: string): Promise<ImdbTitleInfo>
           totalSeasons,
           totalEpisodes,
           genres,
+          countries,
         };
       }
     }
@@ -238,6 +246,7 @@ export async function checkImdbTitleType(imdbId: string): Promise<ImdbTitleInfo>
 
     let totalSeasons: number | null = null;
     let totalEpisodes: number | null = null;
+    let countries: string[] = [];
 
     if (isSeries) {
       try {
@@ -247,6 +256,8 @@ export async function checkImdbTitleType(imdbId: string): Promise<ImdbTitleInfo>
         );
         if (tvMazeRes.ok) {
           const tvData: any = await tvMazeRes.json();
+          const cName = tvData.network?.country?.name || tvData.webChannel?.country?.name;
+          if (cName) countries.push(cName);
           const sRes = await fetch(
             `https://api.tvmaze.com/shows/${tvData.id}/seasons`,
           );
@@ -275,6 +286,7 @@ export async function checkImdbTitleType(imdbId: string): Promise<ImdbTitleInfo>
       typeName: exact.q || exact.qid,
       totalSeasons,
       totalEpisodes,
+      countries,
     };
   } catch {
     return { isKnown: false, isMovie: true, isSeries: false, mediaType: 'MOVIE' };
@@ -314,6 +326,7 @@ export async function fetchMovieMetadataByImdbId(
           totalSeasons: imdbInfo.totalSeasons ?? null,
           totalEpisodes: imdbInfo.totalEpisodes ?? null,
           genres: imdbInfo.genres || [],
+          countries: imdbInfo.countries || [],
         },
       };
     }
@@ -456,6 +469,7 @@ export async function fetchMovieMetadataByImdbId(
           totalSeasons: totalSeasons ?? imdbInfo.totalSeasons ?? null,
           totalEpisodes: totalEpisodes ?? imdbInfo.totalEpisodes ?? null,
           genres: genres.length > 0 ? genres : (imdbInfo.genres || []),
+          countries: imdbInfo.countries || [],
         },
       };
     }
@@ -527,6 +541,7 @@ export async function fetchMovieMetadataByImdbId(
           totalSeasons: null,
           totalEpisodes: null,
           genres,
+          countries: imdbInfo.countries || [],
         },
       };
     }
@@ -550,6 +565,7 @@ export async function fetchMovieMetadataByImdbId(
           totalSeasons: imdbInfo.totalSeasons ?? null,
           totalEpisodes: imdbInfo.totalEpisodes ?? null,
           genres: imdbInfo.genres || [],
+          countries: imdbInfo.countries || [],
         },
       };
     }

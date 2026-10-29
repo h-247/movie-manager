@@ -37,6 +37,7 @@ export interface CreateMovieInput {
   currentSeason?: number | null;
   currentEpisode?: number | null;
   genres?: string[] | string;
+  countries?: string[] | string | null;
   status?: WatchStatus;
   personalRating?: number | null;
   notes?: string | null;
@@ -64,6 +65,7 @@ export interface UpdateMovieInput {
   currentSeason?: number | null;
   currentEpisode?: number | null;
   genres?: string[] | string;
+  countries?: string[] | string | null;
 }
 
 export interface DashboardStats {
@@ -209,6 +211,13 @@ export class MovieService {
         : input.genres;
     }
 
+    let countriesStr: string | null = null;
+    if (input.countries) {
+      countriesStr = Array.isArray(input.countries)
+        ? JSON.stringify(input.countries)
+        : input.countries;
+    }
+
     const canonicalUrl = input.imdbUrl || `https://www.imdb.com/title/${imdbId}/`;
 
     const newMovieRecord = {
@@ -230,6 +239,7 @@ export class MovieService {
       currentSeason: input.currentSeason ?? null,
       currentEpisode: input.currentEpisode ?? null,
       genres: genresStr,
+      countries: countriesStr,
       status,
       personalRating:
         typeof input.personalRating === 'number' ? input.personalRating : null,
@@ -306,6 +316,13 @@ export class MovieService {
       updates.genres = Array.isArray(input.genres)
         ? JSON.stringify(input.genres)
         : input.genres;
+    }
+    if (input.countries !== undefined) {
+      updates.countries = input.countries === null
+        ? null
+        : Array.isArray(input.countries)
+          ? JSON.stringify(input.countries)
+          : input.countries;
     }
     if (input.personalRating !== undefined) {
       updates.personalRating = input.personalRating;

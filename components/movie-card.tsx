@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ExternalLink, Star, Film, ChevronDown, Check } from 'lucide-react';
+import { ExternalLink, Star, Film, ChevronDown, Check, Globe } from 'lucide-react';
 import type { Movie, WatchStatus } from '@/db/schema';
 import { StatusBadge } from './status-badge';
 import { getFullPosterUrl } from '@/lib/tmdb';
@@ -27,6 +27,18 @@ export function MovieCard({
       const parsed = JSON.parse(movie.genres);
       if (Array.isArray(parsed)) {
         genresList = parsed;
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  let countriesList: string[] = [];
+  if (movie.countries) {
+    try {
+      const parsed = JSON.parse(movie.countries);
+      if (Array.isArray(parsed)) {
+        countriesList = parsed;
       }
     } catch {
       // ignore
@@ -123,17 +135,66 @@ export function MovieCard({
             </div>
           </div>
 
-          {movie.mediaType === 'SERIES' && (movie.totalSeasons || movie.totalEpisodes) && (
-            <p className="mt-1 text-[11px] text-neutral-400">
-              {movie.totalSeasons ? `${movie.totalSeasons} Season${movie.totalSeasons > 1 ? 's' : ''}` : ''}
-              {movie.totalEpisodes ? ` • ${movie.totalEpisodes} Episodes` : ''}
-            </p>
+          {/* Production Country */}
+          {countriesList.length > 0 && (
+            <div className="mt-1 flex items-center gap-1 text-[11px] text-neutral-400">
+              <Globe className="h-3 w-3 shrink-0 text-neutral-500" />
+              <span className="truncate" title={`Production: ${countriesList.join(', ')}`}>
+                {countriesList.join(', ')}
+              </span>
+            </div>
           )}
 
-          {/* Genres Chips */}
+          {/* Series Progress on Card */}
+          {movie.mediaType === 'SERIES' && (() => {
+            const totalSeas = movie.totalSeasons || 1;
+            const totalEps = movie.totalEpisodes || null;
+            const epsPerSeason = totalEps && totalSeas ? Math.ceil(totalEps / totalSeas) : (totalEps || null);
+            const curSeason = Math.min(Math.max(movie.currentSeason || 1, 1), totalSeas);
+            const curEpisode = epsPerSeason ? Math.min(Math.max(movie.currentEpisode || 1, 1), epsPerSeason) : (movie.currentEpisode || 1);
+
+            const totalWatched = epsPerSeason ? (curSeason - 1) * epsPerSeason + curEpisode : null;
+            const progressPercent = (totalEps && totalWatched) ? Math.min(Math.round((totalWatched / totalEps) * 100), 100) : null;
+
+            return (
+              <div className="mt-2.5 rounded-lg border border-purple-500/20 bg-purple-950/20 p-2 text-xs">
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="font-semibold text-purple-300">Series Progress</span>
+                  {progressPercent !== null && (
+                    <span className="font-semibold text-purple-400">{progressPercent}%</span>
+                  )}
+                </div>
+                <div className="mt-1 flex items-center justify-between text-[11px] text-neutral-300">
+                  <span>
+                    Season <strong className="text-white">{curSeason}</strong>{movie.totalSeasons ? `/${movie.totalSeasons}` : ''}
+                  </span>
+                  <span>
+                    Episode <strong className="text-white">{curEpisode}</strong>{epsPerSeason ? `/${epsPerSeason}` : ''}
+                  </span>
+                </div>
+                {progressPercent !== null && (
+                  <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-neutral-800">
+                    <div
+                      className="h-full rounded-full bg-purple-500 transition-all duration-300"
+                      style={{ width: `${progressPercent}%` }}
+                    />
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+
+          {/* Main Genre & Other Genres */}
           {genresList.length > 0 && (
-            <div className="mt-2 flex flex-wrap gap-1">
-              {genresList.slice(0, 2).map((genre) => (
+            <div className="mt-2.5 flex flex-wrap items-center gap-1">
+              <span
+                className="inline-flex items-center gap-1 rounded bg-amber-500/15 px-2 py-0.5 text-[11px] font-semibold text-amber-300 border border-amber-500/30"
+                title={`Main Genre: ${genresList[0]}`}
+              >
+                <span className="text-[9px] uppercase tracking-wider text-amber-400/80 font-bold">Main</span>
+                {genresList[0]}
+              </span>
+              {genresList.slice(1, 3).map((genre) => (
                 <span
                   key={genre}
                   className="rounded bg-[#1A1A1A] px-1.5 py-0.5 text-[11px] font-medium text-neutral-400 border border-neutral-800"
@@ -141,9 +202,9 @@ export function MovieCard({
                   {genre}
                 </span>
               ))}
-              {genresList.length > 2 && (
+              {genresList.length > 3 && (
                 <span className="rounded bg-[#1A1A1A] px-1.5 py-0.5 text-[11px] text-neutral-500 border border-neutral-800">
-                  +{genresList.length - 2}
+                  +{genresList.length - 3}
                 </span>
               )}
             </div>

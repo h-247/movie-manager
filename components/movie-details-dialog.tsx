@@ -9,6 +9,7 @@ import {
   Save,
   Check,
   Film,
+  Globe,
 } from 'lucide-react';
 import type { Movie, WatchStatus } from '@/db/schema';
 import { StatusBadge } from './status-badge';
@@ -49,6 +50,7 @@ export function MovieDetailsDialog({
   const [editCurrentEpisode, setEditCurrentEpisode] = useState<string>('');
   const [editOverview, setEditOverview] = useState('');
   const [editGenres, setEditGenres] = useState('');
+  const [editCountries, setEditCountries] = useState('');
   const [editPosterPath, setEditPosterPath] = useState('');
 
   useEffect(() => {
@@ -73,6 +75,15 @@ export function MovieDetailsDialog({
         // ignore
       }
       setEditGenres(parsedG.join(', '));
+
+      let parsedC: string[] = [];
+      try {
+        if (movie.countries) parsedC = JSON.parse(movie.countries);
+      } catch {
+        // ignore
+      }
+      setEditCountries(parsedC.join(', '));
+
       setIsEditingMetadata(false);
       setImageError(false);
     }
@@ -87,6 +98,13 @@ export function MovieDetailsDialog({
   let genresList: string[] = [];
   try {
     if (movie.genres) genresList = JSON.parse(movie.genres);
+  } catch {
+    // ignore
+  }
+
+  let countriesList: string[] = [];
+  try {
+    if (movie.countries) countriesList = JSON.parse(movie.countries);
   } catch {
     // ignore
   }
@@ -109,6 +127,11 @@ export function MovieDetailsDialog({
         .map((g) => g.trim())
         .filter(Boolean);
 
+      const parsedCountries = editCountries
+        .split(',')
+        .map((c) => c.trim())
+        .filter(Boolean);
+
       await onUpdate(movie.id, {
         title: editTitle.trim() || movie.title,
         originalTitle: editOriginalTitle.trim() || null,
@@ -123,6 +146,7 @@ export function MovieDetailsDialog({
         overview: editOverview.trim() || null,
         posterPath: editPosterPath.trim() || null,
         genres: parsedGenres,
+        countries: parsedCountries,
       });
       setIsEditingMetadata(false);
     } finally {
@@ -332,6 +356,18 @@ export function MovieDetailsDialog({
                   </div>
                   <div>
                     <label className="block mb-1 text-neutral-400 font-medium">
+                      Production Countries (comma separated)
+                    </label>
+                    <input
+                      type="text"
+                      value={editCountries}
+                      onChange={(e) => setEditCountries(e.target.value)}
+                      placeholder="United States, Canada"
+                      className="w-full rounded bg-[#262626] border border-neutral-700 px-2.5 py-1.5 text-[#ECECEC] focus:border-white focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block mb-1 text-neutral-400 font-medium">
                       Poster Image URL or Path
                     </label>
                     <input
@@ -410,6 +446,12 @@ export function MovieDetailsDialog({
                       <span className="flex items-center gap-1">
                         <Clock className="h-3.5 w-3.5 text-neutral-500" />
                         {movie.runtimeMinutes} min
+                      </span>
+                    )}
+                    {countriesList.length > 0 && (
+                      <span className="flex items-center gap-1" title="Production Country">
+                        <Globe className="h-3.5 w-3.5 text-neutral-500" />
+                        <span>{countriesList.join(', ')}</span>
                       </span>
                     )}
                     {movie.mediaType === 'SERIES' && movie.totalSeasons && (
@@ -549,15 +591,24 @@ export function MovieDetailsDialog({
 
                   {/* Genres */}
                   {genresList.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5 pt-1">
-                      {genresList.map((g) => (
-                        <span
-                          key={g}
-                          className="rounded-full bg-[#1A1A1A] px-2.5 py-0.5 text-xs text-neutral-300 border border-neutral-800"
-                        >
-                          {g}
-                        </span>
-                      ))}
+                    <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                      <span className="text-[11px] font-semibold text-neutral-400 mr-0.5">Main Genre:</span>
+                      <span className="rounded-full bg-amber-500/20 px-2.5 py-0.5 text-xs font-semibold text-amber-300 border border-amber-500/30">
+                        {genresList[0]}
+                      </span>
+                      {genresList.length > 1 && (
+                        <>
+                          <span className="text-[11px] text-neutral-500 font-medium ml-1.5 mr-0.5">Other:</span>
+                          {genresList.slice(1).map((g) => (
+                            <span
+                              key={g}
+                              className="rounded-full bg-[#1A1A1A] px-2.5 py-0.5 text-xs text-neutral-300 border border-neutral-800"
+                            >
+                              {g}
+                            </span>
+                          ))}
+                        </>
+                      )}
                     </div>
                   )}
 

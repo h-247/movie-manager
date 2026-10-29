@@ -13,6 +13,7 @@ import {
   Film,
   ExternalLink,
   Save,
+  Globe,
 } from 'lucide-react';
 import type { Movie, WatchStatus } from '@/db/schema';
 import { getFullPosterUrl, type MovieMetadata } from '@/lib/tmdb';
@@ -62,6 +63,7 @@ export function ImportDialog({
   const [manualTotalSeasons, setManualTotalSeasons] = useState('');
   const [manualTotalEpisodes, setManualTotalEpisodes] = useState('');
   const [manualGenres, setManualGenres] = useState('');
+  const [manualCountries, setManualCountries] = useState('');
   const [manualPoster, setManualPoster] = useState('');
   const [manualOverview, setManualOverview] = useState('');
 
@@ -125,6 +127,7 @@ export function ImportDialog({
         setManualTotalSeasons(data.metadata.totalSeasons ? String(data.metadata.totalSeasons) : '');
         setManualTotalEpisodes(data.metadata.totalEpisodes ? String(data.metadata.totalEpisodes) : '');
         setManualGenres(data.metadata.genres ? data.metadata.genres.join(', ') : '');
+        setManualCountries(data.metadata.countries ? data.metadata.countries.join(', ') : '');
         setManualPoster(data.metadata.posterPath || '');
         setManualOverview(data.metadata.overview || '');
       } else if (data.unsupportedTitleInfo) {
@@ -136,6 +139,7 @@ export function ImportDialog({
         setManualTotalSeasons('');
         setManualTotalEpisodes('');
         setManualGenres('');
+        setManualCountries('');
         setManualPoster(data.unsupportedTitleInfo.posterUrl || '');
         setManualOverview('');
       } else if (data.canFallbackToManual) {
@@ -148,6 +152,7 @@ export function ImportDialog({
         setManualTotalSeasons('');
         setManualTotalEpisodes('');
         setManualGenres('');
+        setManualCountries('');
         setManualPoster('');
         setManualOverview('');
       }
@@ -179,6 +184,11 @@ export function ImportDialog({
           .map((g) => g.trim())
           .filter(Boolean);
 
+        const parsedC = manualCountries
+          .split(',')
+          .map((c) => c.trim())
+          .filter(Boolean);
+
         payload = {
           imdbId: previewData.parsed.imdbId,
           imdbUrl: previewData.parsed.imdbUrl,
@@ -197,6 +207,7 @@ export function ImportDialog({
             null,
           overview: manualOverview.trim() || null,
           genres: parsedG,
+          countries: parsedC,
           status: selectedStatus,
         };
       } else {
@@ -620,6 +631,16 @@ export function ImportDialog({
                       />
                     </div>
                     <div>
+                      <label className="block mb-1 text-neutral-400">Countries (comma separated)</label>
+                      <input
+                        type="text"
+                        value={manualCountries}
+                        onChange={(e) => setManualCountries(e.target.value)}
+                        placeholder="United States, Canada"
+                        className="w-full rounded bg-[#262626] border border-neutral-700 px-3 py-1.5 text-[#ECECEC] focus:border-white focus:outline-none"
+                      />
+                    </div>
+                    <div>
                       <label className="block mb-1 text-neutral-400">Poster Image URL (optional)</label>
                       <input
                         type="text"
@@ -683,9 +704,18 @@ export function ImportDialog({
                           previewData.metadata?.runtimeMinutes ? ` • ${previewData.metadata.runtimeMinutes} min` : ''
                         )}
                       </p>
-                      {previewData.metadata?.genres && (
-                        <div className="flex flex-wrap gap-1 pt-1">
-                          {previewData.metadata.genres.map((g) => (
+                      {previewData.metadata?.countries && previewData.metadata.countries.length > 0 && (
+                        <p className="flex items-center gap-1 text-[11px] text-neutral-400">
+                          <Globe className="h-3 w-3 text-neutral-500" />
+                          <span>{previewData.metadata.countries.join(', ')}</span>
+                        </p>
+                      )}
+                      {previewData.metadata?.genres && previewData.metadata.genres.length > 0 && (
+                        <div className="flex flex-wrap items-center gap-1 pt-1">
+                          <span className="rounded bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold text-amber-300 border border-amber-500/30">
+                            Main: {previewData.metadata.genres[0]}
+                          </span>
+                          {previewData.metadata.genres.slice(1).map((g) => (
                             <span
                               key={g}
                               className="rounded bg-[#262626] px-2 py-0.5 text-[10px] text-neutral-300 border border-neutral-700"
