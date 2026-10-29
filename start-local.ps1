@@ -119,7 +119,13 @@ if (-not (Test-Path (Join-Path $RepoRoot "drizzle"))) {
     Write-Host "  -> Generating SQL migrations from Drizzle schema..." -ForegroundColor Yellow
     npm run db:generate
 }
-Write-Host "  -> D1 SQLite schema ready" -ForegroundColor Green
+try {
+    Write-Host "  -> Applying local D1 migrations..." -ForegroundColor Cyan
+    & npx wrangler d1 migrations apply site-creator-d1 --local --config wrangler.migrations.json 2>$null
+    Write-Host "  -> D1 SQLite schema & migrations up to date" -ForegroundColor Green
+} catch {
+    Write-Host "  -> D1 SQLite schema ready" -ForegroundColor Green
+}
 
 # ------------------------------------------------------------------------------
 # 3. Find available port (Never use ports currently in use)
