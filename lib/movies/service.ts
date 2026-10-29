@@ -1,11 +1,12 @@
 import { eq, and, or, like, desc, asc, sql } from 'drizzle-orm';
 import { getDb } from '@/db';
-import { movies, type Movie, type WatchStatus } from '@/db/schema';
+import { movies, type Movie, type WatchStatus, type MediaType } from '@/db/schema';
 import { fetchMovieMetadataByImdbId, checkImdbTitleType } from '@/lib/tmdb';
 
 export interface GetMoviesParams {
   userId: string;
   status?: string;
+  mediaType?: string;
   search?: string;
   genre?: string;
   year?: number;
@@ -25,11 +26,16 @@ export interface CreateMovieInput {
   tmdbId?: number | null;
   title: string;
   originalTitle?: string | null;
+  mediaType?: MediaType;
   releaseDate?: string | null;
   releaseYear?: number | null;
   posterPath?: string | null;
   overview?: string | null;
   runtimeMinutes?: number | null;
+  totalSeasons?: number | null;
+  totalEpisodes?: number | null;
+  currentSeason?: number | null;
+  currentEpisode?: number | null;
   genres?: string[] | string;
   status?: WatchStatus;
   personalRating?: number | null;
@@ -41,6 +47,7 @@ export interface CreateMovieInput {
 
 export interface UpdateMovieInput {
   status?: WatchStatus;
+  mediaType?: MediaType;
   personalRating?: number | null;
   notes?: string | null;
   startedAt?: string | null;
@@ -52,11 +59,17 @@ export interface UpdateMovieInput {
   posterPath?: string | null;
   overview?: string | null;
   runtimeMinutes?: number | null;
+  totalSeasons?: number | null;
+  totalEpisodes?: number | null;
+  currentSeason?: number | null;
+  currentEpisode?: number | null;
   genres?: string[] | string;
 }
 
 export interface DashboardStats {
   total: number;
+  totalMovies: number;
+  totalSeries: number;
   todo: number;
   doing: number;
   done: number;
@@ -71,12 +84,16 @@ export class MovieService {
   }
 
   async getMovies(params: GetMoviesParams): Promise<Movie[]> {
-    const { userId, status, search, genre, year, sortBy = 'added_desc' } = params;
+    const { userId, status, mediaType, search, genre, year, sortBy = 'added_desc' } = params;
 
     const conditions = [eq(movies.userId, userId)];
 
     if (status && status !== 'ALL') {
       conditions.push(eq(movies.status, status as WatchStatus));
+    }
+
+    if (mediaType && mediaType !== 'ALL') {
+      conditions.push(eq(movies.mediaType, mediaType as MediaType));
     }
 
     if (year) {
@@ -157,23 +174,17 @@ export class MovieService {
     // Check duplicate
     const existing = await this.getMovieByImdbId(imdbId, userId);
     if (existing) {
-      const err = new Error(`Movie with IMDb ID "${imdbId}" is already in your watchlist.`);
+      const err = new Error(`Item with IMDb ID "${imdbId}" is already in your watchlist.`);
       (err as any).code = 'DUPLICATE_MOVIE';
       (err as any).existingMovie = existing;
       throw err;
     }
 
-    // Verify title is a movie and not a TV series/episode/game unless forceAsMovie is explicitly enabled
-    if (!input.forceAsMovie) {
+    let mediaType: MediaType = input.mediaType || 'MOVIE';
+    if (!input.mediaType) {
       const titleCheck = await checkImdbTitleType(imdbId);
-      if (titleCheck.isKnown && !titleCheck.isMovie) {
-        const titleLabel = titleCheck.title ? ` (${titleCheck.title})` : '';
-        const typeLabel = titleCheck.typeName ? ` a ${titleCheck.typeName}` : ' a TV series';
-        const err = new Error(
-          `This IMDb ID belongs to${typeLabel}${titleLabel}. Movie Watchlist Manager supports movies only.`,
-        );
-        (err as any).code = 'UNSUPPORTED_TITLE_TYPE';
-        throw err;
+      if (titleCheck.isKnown && titleCheck.mediaType) {
+        mediaType = titleCheck.mediaType;
       }
     }
 
@@ -208,11 +219,16 @@ export class MovieService {
       tmdbId: input.tmdbId ?? null,
       title: input.title.trim(),
       originalTitle: input.originalTitle ? input.originalTitle.trim() : null,
+      mediaType,
       releaseDate: input.releaseDate || null,
       releaseYear: input.releaseYear || null,
       posterPath: input.posterPath || null,
       overview: input.overview ? input.overview.trim() : null,
       runtimeMinutes: input.runtimeMinutes || null,
+      totalSeasons: input.totalSeasons ?? null,
+      totalEpisodes: input.totalEpisodes ?? null,
+      currentSeason: input.currentSeason ?? null,
+      currentEpisode: input.currentEpisode ?? null,
       genres: genresStr,
       status,
       personalRating:
@@ -228,7 +244,7 @@ export class MovieService {
 
     const created = await this.getMovieById(id, userId);
     if (!created) {
-      throw new Error('Failed to retrieve newly created movie record');
+      throw new Error('Failed to retrieve newly created record');
     }
     return created;
   }
@@ -250,6 +266,21 @@ export class MovieService {
       updatedAt: nowIso,
     };
 
+    if (input.mediaType !== undefined) {
+      updates.mediaType = input.mediaType;
+    }
+    if (input.totalSeasons !== undefined) {
+      updates.totalSeasons = input.totalSeasons;
+    }
+    if (input.totalEpisodes !== undefined) {
+      updates.totalEpisodes = input.totalEpisodes;
+    }
+    if (input.currentSeason !== undefined) {
+      updates.currentSeason = input.currentSeason;
+    }
+    if (input.currentEpisode !== undefined) {
+      updates.currentEpisode = input.currentEpisode;
+    }
     if (input.title !== undefined) {
       updates.title = input.title.trim();
     }
@@ -358,6 +389,7 @@ export class MovieService {
       .select({
         status: movies.status,
         genres: movies.genres,
+        mediaType: movies.mediaType,
       })
       .from(movies)
       .where(eq(movies.userId, userId));
@@ -365,9 +397,17 @@ export class MovieService {
     let todo = 0;
     let doing = 0;
     let done = 0;
+    let totalMovies = 0;
+    let totalSeries = 0;
     const genreCountMap: Record<string, number> = {};
 
     for (const m of allUserMovies) {
+      if (m.mediaType === 'SERIES') {
+        totalSeries++;
+      } else {
+        totalMovies++;
+      }
+
       if (m.status === 'TO_DO') todo++;
       else if (m.status === 'DOING') doing++;
       else if (m.status === 'DONE') done++;
@@ -394,6 +434,8 @@ export class MovieService {
 
     return {
       total: allUserMovies.length,
+      totalMovies,
+      totalSeries,
       todo,
       doing,
       done,

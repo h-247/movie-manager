@@ -55,9 +55,12 @@ export function ImportDialog({
   // Manual fallback fields (when TMDB metadata not available or manual edit requested)
   const [isManualEntry, setIsManualEntry] = useState(false);
   const [manualTitle, setManualTitle] = useState('');
+  const [manualMediaType, setManualMediaType] = useState<'MOVIE' | 'SERIES'>('MOVIE');
   const [manualYear, setManualYear] = useState('');
   const [manualDate, setManualDate] = useState('');
   const [manualRuntime, setManualRuntime] = useState('');
+  const [manualTotalSeasons, setManualTotalSeasons] = useState('');
+  const [manualTotalEpisodes, setManualTotalEpisodes] = useState('');
   const [manualGenres, setManualGenres] = useState('');
   const [manualPoster, setManualPoster] = useState('');
   const [manualOverview, setManualOverview] = useState('');
@@ -115,26 +118,35 @@ export function ImportDialog({
 
       if (data.metadata) {
         setManualTitle(data.metadata.title);
+        setManualMediaType(data.metadata.mediaType || 'MOVIE');
         setManualYear(data.metadata.releaseYear ? String(data.metadata.releaseYear) : '');
         setManualDate(data.metadata.releaseDate || '');
         setManualRuntime(data.metadata.runtimeMinutes ? String(data.metadata.runtimeMinutes) : '');
+        setManualTotalSeasons(data.metadata.totalSeasons ? String(data.metadata.totalSeasons) : '');
+        setManualTotalEpisodes(data.metadata.totalEpisodes ? String(data.metadata.totalEpisodes) : '');
         setManualGenres(data.metadata.genres ? data.metadata.genres.join(', ') : '');
         setManualPoster(data.metadata.posterPath || '');
         setManualOverview(data.metadata.overview || '');
       } else if (data.unsupportedTitleInfo) {
         setManualTitle(data.unsupportedTitleInfo.title || '');
+        setManualMediaType('SERIES');
         setManualYear(data.unsupportedTitleInfo.year ? String(data.unsupportedTitleInfo.year) : '');
         setManualDate(data.unsupportedTitleInfo.year ? `${data.unsupportedTitleInfo.year}-01-01` : '');
         setManualRuntime('');
+        setManualTotalSeasons('');
+        setManualTotalEpisodes('');
         setManualGenres('');
         setManualPoster(data.unsupportedTitleInfo.posterUrl || '');
         setManualOverview('');
       } else if (data.canFallbackToManual) {
         setIsManualEntry(true);
         setManualTitle('');
+        setManualMediaType('MOVIE');
         setManualYear('');
         setManualDate('');
         setManualRuntime('');
+        setManualTotalSeasons('');
+        setManualTotalEpisodes('');
         setManualGenres('');
         setManualPoster('');
         setManualOverview('');
@@ -157,7 +169,7 @@ export function ImportDialog({
         const titleToUse =
           manualTitle.trim() || previewData.unsupportedTitleInfo?.title || '';
         if (!titleToUse) {
-          setSubmitError('Movie title is required.');
+          setSubmitError('Title is required.');
           setIsSubmitting(false);
           return;
         }
@@ -171,11 +183,14 @@ export function ImportDialog({
           imdbId: previewData.parsed.imdbId,
           imdbUrl: previewData.parsed.imdbUrl,
           title: titleToUse,
+          mediaType: manualMediaType,
           releaseYear: manualYear
             ? parseInt(manualYear, 10)
             : previewData.unsupportedTitleInfo?.year || null,
           releaseDate: manualDate.trim() || null,
           runtimeMinutes: manualRuntime ? parseInt(manualRuntime, 10) : null,
+          totalSeasons: manualTotalSeasons ? parseInt(manualTotalSeasons, 10) : null,
+          totalEpisodes: manualTotalEpisodes ? parseInt(manualTotalEpisodes, 10) : null,
           posterPath:
             manualPoster.trim() ||
             previewData.unsupportedTitleInfo?.posterUrl ||
@@ -183,13 +198,11 @@ export function ImportDialog({
           overview: manualOverview.trim() || null,
           genres: parsedG,
           status: selectedStatus,
-          forceAsMovie: previewData.isUnsupportedType || isManualEntry,
         };
       } else {
         payload = {
           ...previewData.metadata,
           status: selectedStatus,
-          forceAsMovie: previewData.isUnsupportedType,
         };
       }
 
@@ -347,7 +360,7 @@ export function ImportDialog({
         <div className="sticky top-0 z-20 flex items-center justify-between border-b border-neutral-800 bg-[#262626]/95 px-5 py-3.5 backdrop-blur-sm">
           <div className="flex items-center gap-2">
             <Plus className="h-5 w-5 text-white" />
-            <h3 className="text-base font-semibold text-white">Import Movies</h3>
+            <h3 className="text-base font-semibold text-white">Import Movies & Series</h3>
           </div>
           <button
             type="button"
@@ -403,14 +416,14 @@ export function ImportDialog({
           <div className="p-5 sm:p-6 space-y-5">
             <form onSubmit={handlePreviewSingle} className="space-y-3">
               <label className="block text-xs font-medium text-neutral-300">
-                Paste IMDb URL or title ID (e.g. tt0111161)
+                Paste IMDb URL or title ID (e.g. tt0111161 or tt2442560)
               </label>
               <div className="flex gap-2">
                 <input
                   type="text"
                   value={singleInput}
                   onChange={(e) => setSingleInput(e.target.value)}
-                  placeholder="https://www.imdb.com/title/tt0111161/ or tt0111161"
+                  placeholder="https://www.imdb.com/title/tt0111161/ or tt2442560"
                   className="flex-1 rounded-lg border border-neutral-800 bg-[#1A1A1A] px-3.5 py-2 text-xs text-[#ECECEC] placeholder-neutral-500 focus:border-neutral-600 focus:outline-none"
                 />
                 <button
@@ -441,7 +454,7 @@ export function ImportDialog({
               </div>
             )}
 
-            {/* TV Show / Unsupported Title Type Notice */}
+            {/* Unsupported Title Type Notice */}
             {previewData?.isUnsupportedType && (
               <div className="flex items-start gap-2.5 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3.5 text-xs text-amber-300">
                 <AlertCircle className="h-4 w-4 shrink-0 mt-0.5 text-amber-400" />
@@ -449,7 +462,7 @@ export function ImportDialog({
                   <p className="font-semibold text-amber-200">Unsupported Title Type</p>
                   <p className="mt-0.5 text-neutral-300">{previewData.error}</p>
                   <p className="mt-1 text-[11px] text-amber-300/80">
-                    Movie Watchlist Manager tracks movies only (no season/episode tracking). You can still import this title as a single movie entry below.
+                    Watchlist Manager supports movies and TV series. You can still import this title as a manual entry below.
                   </p>
                 </div>
               </div>
@@ -493,7 +506,11 @@ export function ImportDialog({
               <div className="rounded-xl border border-neutral-700 bg-[#1A1A1A] p-4 space-y-4">
                 <div className="flex items-center justify-between border-b border-neutral-800 pb-2.5">
                   <span className="text-xs font-semibold uppercase tracking-wider text-neutral-400">
-                    {previewData.isUnsupportedType ? 'Single Movie Entry Preview' : 'Movie Import Preview'}
+                    {previewData.metadata?.mediaType === 'SERIES'
+                      ? 'Series Import Preview'
+                      : previewData.isUnsupportedType
+                      ? 'Manual Title Preview'
+                      : 'Movie Import Preview'}
                   </span>
                   <a
                     href={previewData.parsed.imdbUrl}
@@ -510,40 +527,88 @@ export function ImportDialog({
                   /* Manual Entry Mode */
                   <div className="space-y-3 text-xs">
                     <p className="text-neutral-400">
-                      Enter movie details manually while keeping the validated IMDb ID:
+                      Enter details manually while keeping the validated IMDb ID:
                     </p>
-                    <div>
-                      <label className="block mb-1 text-neutral-400">Title *</label>
-                      <input
-                        type="text"
-                        value={manualTitle}
-                        onChange={(e) => setManualTitle(e.target.value)}
-                        placeholder="e.g. The Matrix"
-                        className="w-full rounded bg-[#262626] border border-neutral-700 px-3 py-1.5 text-[#ECECEC] focus:border-white focus:outline-none"
-                      />
-                    </div>
                     <div className="grid grid-cols-2 gap-2">
                       <div>
-                        <label className="block mb-1 text-neutral-400">Release Year</label>
-                        <input
-                          type="number"
-                          value={manualYear}
-                          onChange={(e) => setManualYear(e.target.value)}
-                          placeholder="e.g. 1999"
+                        <label className="block mb-1 text-neutral-400">Type</label>
+                        <select
+                          value={manualMediaType}
+                          onChange={(e) => setManualMediaType(e.target.value as 'MOVIE' | 'SERIES')}
                           className="w-full rounded bg-[#262626] border border-neutral-700 px-3 py-1.5 text-[#ECECEC] focus:border-white focus:outline-none"
-                        />
+                        >
+                          <option value="MOVIE">Movie</option>
+                          <option value="SERIES">TV Series</option>
+                        </select>
                       </div>
                       <div>
-                        <label className="block mb-1 text-neutral-400">Runtime (min)</label>
+                        <label className="block mb-1 text-neutral-400">Title *</label>
                         <input
-                          type="number"
-                          value={manualRuntime}
-                          onChange={(e) => setManualRuntime(e.target.value)}
-                          placeholder="e.g. 136"
+                          type="text"
+                          value={manualTitle}
+                          onChange={(e) => setManualTitle(e.target.value)}
+                          placeholder={manualMediaType === 'SERIES' ? 'e.g. Breaking Bad' : 'e.g. The Matrix'}
                           className="w-full rounded bg-[#262626] border border-neutral-700 px-3 py-1.5 text-[#ECECEC] focus:border-white focus:outline-none"
                         />
                       </div>
                     </div>
+                    {manualMediaType === 'SERIES' ? (
+                      <div className="grid grid-cols-3 gap-2">
+                        <div>
+                          <label className="block mb-1 text-neutral-400">Release Year</label>
+                          <input
+                            type="number"
+                            value={manualYear}
+                            onChange={(e) => setManualYear(e.target.value)}
+                            placeholder="e.g. 2008"
+                            className="w-full rounded bg-[#262626] border border-neutral-700 px-3 py-1.5 text-[#ECECEC] focus:border-white focus:outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="block mb-1 text-neutral-400">Seasons</label>
+                          <input
+                            type="number"
+                            value={manualTotalSeasons}
+                            onChange={(e) => setManualTotalSeasons(e.target.value)}
+                            placeholder="e.g. 5"
+                            className="w-full rounded bg-[#262626] border border-neutral-700 px-3 py-1.5 text-[#ECECEC] focus:border-white focus:outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="block mb-1 text-neutral-400">Episodes</label>
+                          <input
+                            type="number"
+                            value={manualTotalEpisodes}
+                            onChange={(e) => setManualTotalEpisodes(e.target.value)}
+                            placeholder="e.g. 62"
+                            className="w-full rounded bg-[#262626] border border-neutral-700 px-3 py-1.5 text-[#ECECEC] focus:border-white focus:outline-none"
+                          />
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="block mb-1 text-neutral-400">Release Year</label>
+                          <input
+                            type="number"
+                            value={manualYear}
+                            onChange={(e) => setManualYear(e.target.value)}
+                            placeholder="e.g. 1999"
+                            className="w-full rounded bg-[#262626] border border-neutral-700 px-3 py-1.5 text-[#ECECEC] focus:border-white focus:outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="block mb-1 text-neutral-400">Runtime (min)</label>
+                          <input
+                            type="number"
+                            value={manualRuntime}
+                            onChange={(e) => setManualRuntime(e.target.value)}
+                            placeholder="e.g. 136"
+                            className="w-full rounded bg-[#262626] border border-neutral-700 px-3 py-1.5 text-[#ECECEC] focus:border-white focus:outline-none"
+                          />
+                        </div>
+                      </div>
+                    )}
                     <div>
                       <label className="block mb-1 text-neutral-400">Genres (comma separated)</label>
                       <input
@@ -596,16 +661,27 @@ export function ImportDialog({
                         <h4 className="text-base font-bold text-white">
                           {previewData.metadata?.title || previewData.unsupportedTitleInfo?.title}
                         </h4>
+                        {previewData.metadata?.mediaType === 'SERIES' && (
+                          <span className="rounded bg-purple-500/20 px-2 py-0.5 text-[10px] font-semibold text-purple-300 border border-purple-500/30">
+                            TV Series
+                          </span>
+                        )}
                         {previewData.isUnsupportedType && (
                           <span className="rounded bg-amber-500/20 px-2 py-0.5 text-[10px] font-medium text-amber-300 border border-amber-500/30">
-                            Single Movie Entry
+                            Manual Entry
                           </span>
                         )}
                       </div>
                       <p className="text-neutral-400">
                         {previewData.metadata?.releaseYear || previewData.unsupportedTitleInfo?.year || 'Unknown year'}
-                        {previewData.metadata?.runtimeMinutes &&
-                          ` • ${previewData.metadata.runtimeMinutes} min`}
+                        {previewData.metadata?.mediaType === 'SERIES' ? (
+                          <>
+                            {previewData.metadata.totalSeasons ? ` • ${previewData.metadata.totalSeasons} Season${previewData.metadata.totalSeasons > 1 ? 's' : ''}` : ''}
+                            {previewData.metadata.totalEpisodes ? ` • ${previewData.metadata.totalEpisodes} Eps` : ''}
+                          </>
+                        ) : (
+                          previewData.metadata?.runtimeMinutes ? ` • ${previewData.metadata.runtimeMinutes} min` : ''
+                        )}
                       </p>
                       {previewData.metadata?.genres && (
                         <div className="flex flex-wrap gap-1 pt-1">
@@ -699,11 +775,9 @@ export function ImportDialog({
                     <Plus className="h-3.5 w-3.5" />
                     {isSubmitting
                       ? 'Adding...'
-                      : previewData.isUnsupportedType
-                      ? 'Import as Movie Entry'
                       : isManualEntry
-                      ? 'Save Movie'
-                      : 'Add to Watchlist'}
+                      ? (manualMediaType === 'SERIES' ? 'Save Series' : 'Save Movie')
+                      : (previewData.metadata?.mediaType === 'SERIES' ? 'Add Series to Watchlist' : 'Add to Watchlist')}
                   </button>
                 </div>
               </div>
@@ -757,7 +831,7 @@ export function ImportDialog({
                   onClick={handleExecuteBulkImport}
                   className="flex items-center gap-1.5 rounded-lg bg-white px-4 py-1.5 text-xs font-semibold text-black hover:bg-neutral-200 disabled:opacity-50"
                 >
-                  {isSubmittingBulk ? 'Importing...' : 'Import Valid Movies'}
+                  {isSubmittingBulk ? 'Importing...' : 'Import Valid Titles'}
                 </button>
               </div>
             </div>
@@ -797,7 +871,7 @@ export function ImportDialog({
                     <span className="block text-lg font-bold text-red-400">
                       {bulkInspectionResults.filter((r) => !r.parsed || r.isUnsupportedType).length}
                     </span>
-                    <span className="text-[11px] text-neutral-400">Unsupported / TV</span>
+                    <span className="text-[11px] text-neutral-400">Invalid Links</span>
                   </div>
                 </div>
               </div>

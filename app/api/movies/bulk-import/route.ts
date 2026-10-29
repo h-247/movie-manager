@@ -35,24 +35,16 @@ export async function POST(request: Request) {
             };
           }
 
-          // Check if TV series or unsupported
+          // Check title type and title info
           const titleCheck = await checkImdbTitleType(item.parsed.imdbId);
-          if (titleCheck.isKnown && !titleCheck.isMovie) {
-            const titleLabel = titleCheck.title ? ` (${titleCheck.title})` : '';
-            return {
-              ...item,
-              isAlreadyInCollection: false,
-              isUnsupportedType: true,
-              error: `TV series or unsupported title type${titleLabel}`,
-            };
-          }
-
           const existing = await movieService.getMovieByImdbId(
             item.parsed.imdbId,
             user.userId,
           );
           return {
             ...item,
+            mediaType: titleCheck.mediaType,
+            detectedTitle: titleCheck.title,
             isAlreadyInCollection: !!existing,
             existingTitle: existing?.title,
           };

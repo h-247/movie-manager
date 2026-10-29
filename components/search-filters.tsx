@@ -7,6 +7,8 @@ interface SearchFiltersProps {
   onSearchChange: (value: string) => void;
   status: string;
   onStatusChange: (status: string) => void;
+  mediaType: string;
+  onMediaTypeChange: (type: string) => void;
   genre: string;
   onGenreChange: (genre: string) => void;
   year: string;
@@ -23,6 +25,8 @@ export function SearchFilters({
   onSearchChange,
   status,
   onStatusChange,
+  mediaType,
+  onMediaTypeChange,
   genre,
   onGenreChange,
   year,
@@ -33,7 +37,13 @@ export function SearchFilters({
   totalResults,
   onResetFilters,
 }: SearchFiltersProps) {
-  const isFiltered = !!(search || (status && status !== 'ALL') || genre || year);
+  const isFiltered = !!(
+    search ||
+    (status && status !== 'ALL') ||
+    (mediaType && mediaType !== 'ALL') ||
+    genre ||
+    year
+  );
 
   const sortOptions = [
     { value: 'added_desc', label: 'Recently added' },
@@ -155,6 +165,33 @@ export function SearchFilters({
             />
             Done
           </button>
+        </div>
+
+        {/* Media Type Filter (All / Movies / Series) */}
+        <div className="flex items-center rounded-lg bg-[#1A1A1A] p-0.5 border border-neutral-800">
+          {(
+            [
+              { id: 'ALL', label: 'All' },
+              { id: 'MOVIE', label: 'Movies' },
+              { id: 'SERIES', label: 'Series' },
+            ] as const
+          ).map((t) => {
+            const isSelected = mediaType === t.id;
+            return (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => onMediaTypeChange(t.id)}
+                className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
+                  isSelected
+                    ? 'bg-neutral-700 text-white shadow-sm font-semibold'
+                    : 'text-neutral-400 hover:text-neutral-200'
+                }`}
+              >
+                {t.label}
+              </button>
+            );
+          })}
         </div>
 
         {/* Right side: Genre Filter, Year, and Reset */}

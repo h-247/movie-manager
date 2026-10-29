@@ -13,6 +13,7 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const parsedQuery = movieQuerySchema.safeParse({
       status: searchParams.get('status') || undefined,
+      type: searchParams.get('type') || undefined,
       search: searchParams.get('search') || undefined,
       genre: searchParams.get('genre') || undefined,
       year: searchParams.get('year') || undefined,
@@ -28,7 +29,12 @@ export async function GET(request: Request) {
 
     const moviesList = await movieService.getMovies({
       userId: user.userId,
-      ...parsedQuery.data,
+      status: parsedQuery.data.status,
+      mediaType: parsedQuery.data.type,
+      search: parsedQuery.data.search,
+      genre: parsedQuery.data.genre,
+      year: parsedQuery.data.year,
+      sortBy: parsedQuery.data.sortBy,
     });
 
     return NextResponse.json({ movies: moviesList });

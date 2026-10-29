@@ -83,11 +83,14 @@ describe('Movie Watchlist Integration Tests', () => {
         tmdbId: 238,
         title: 'The Godfather',
         originalTitle: 'The Godfather',
+        mediaType: 'MOVIE' as const,
         releaseDate: '1972-03-14',
         releaseYear: 1972,
         posterPath: '/3bhkrj58Vtu7enYsRolD1fZdja1.jpg',
         overview: 'Spanning the years 1945 to 1955, a chronicle of the fictional Italian-American Corleone crime family.',
         runtimeMinutes: 175,
+        totalSeasons: null,
+        totalEpisodes: null,
         genres: ['Drama', 'Crime'],
       },
     });
@@ -143,11 +146,14 @@ describe('Movie Watchlist Integration Tests', () => {
         tmdbId: 278,
         title: 'Movie Title',
         originalTitle: null,
+        mediaType: 'MOVIE' as const,
         releaseDate: '1994-09-23',
         releaseYear: 1994,
         posterPath: null,
         overview: 'Overview',
         runtimeMinutes: 120,
+        totalSeasons: null,
+        totalEpisodes: null,
         genres: ['Drama'],
       },
     });
@@ -205,11 +211,16 @@ describe('Movie Watchlist Integration Tests', () => {
       tmdbId: 278,
       title: 'The Shawshank Redemption',
       originalTitle: null,
+      mediaType: 'MOVIE',
       releaseDate: '1994-09-23',
       releaseYear: 1994,
       posterPath: null,
       overview: null,
       runtimeMinutes: 142,
+      totalSeasons: null,
+      totalEpisodes: null,
+      currentSeason: null,
+      currentEpisode: null,
       genres: '["Drama"]',
       status: 'TO_DO',
       personalRating: null,
@@ -249,11 +260,16 @@ describe('Movie Watchlist Integration Tests', () => {
       tmdbId: 278,
       title: 'The Shawshank Redemption',
       originalTitle: null,
+      mediaType: 'MOVIE',
       releaseDate: '1994-09-23',
       releaseYear: 1994,
       posterPath: null,
       overview: null,
       runtimeMinutes: 142,
+      totalSeasons: null,
+      totalEpisodes: null,
+      currentSeason: null,
+      currentEpisode: null,
       genres: '["Drama"]',
       status: 'DONE',
       personalRating: null,
@@ -339,68 +355,88 @@ describe('Movie Watchlist Integration Tests', () => {
     ).rejects.toThrow(/not found/i);
   });
 
-  it('11. Gracefully rejects TV shows and unsupported types', async () => {
+  it('11. Successfully imports TV series in bulk imports', async () => {
     vi.spyOn(tmdbModule, 'fetchMovieMetadataByImdbId').mockResolvedValueOnce({
-      success: false,
-      error: 'This IMDb ID belongs to a TV series, season, or episode. Movie Watchlist Manager supports movies only.',
-      isUnsupportedType: true,
-      canFallbackToManual: false,
+      success: true,
+      data: {
+        imdbId: 'tt0903747',
+        imdbUrl: 'https://www.imdb.com/title/tt0903747/',
+        tmdbId: 1396,
+        title: 'Breaking Bad',
+        originalTitle: null,
+        mediaType: 'SERIES',
+        releaseDate: '2008-01-20',
+        releaseYear: 2008,
+        posterPath: null,
+        overview: 'A chemistry teacher diagnosed with cancer turns to manufacturing meth.',
+        runtimeMinutes: 47,
+        totalSeasons: 5,
+        totalEpisodes: 62,
+        genres: ['Crime', 'Drama'],
+      },
     });
 
     service.getMovieByImdbId = vi.fn().mockResolvedValue(null);
 
     const result = await service.bulkImportMovies(
-      [{ imdbId: 'tt0903747', imdbUrl: 'https://www.imdb.com/title/tt0903747/' }], // Breaking Bad
+      [{ imdbId: 'tt0903747', imdbUrl: 'https://www.imdb.com/title/tt0903747/' }],
       'TO_DO',
       'user_123',
     );
 
-    expect(result.imported).toHaveLength(0);
-    expect(result.failed).toHaveLength(1);
-    expect(result.failed[0].error).toContain('supports movies only');
+    expect(result.imported).toHaveLength(1);
+    expect(result.failed).toHaveLength(0);
+    expect(result.imported[0].title).toBe('Breaking Bad');
+    expect(result.imported[0].mediaType).toBe('SERIES');
+    expect(result.imported[0].totalSeasons).toBe(5);
   });
 
-  it('12. Explicitly detects and rejects Peaky Blinders (tt2442560) as a TV series', async () => {
+  it('12. Explicitly detects and imports Peaky Blinders (tt2442560) as a TV series', async () => {
     const res = await tmdbModule.fetchMovieMetadataByImdbId('tt2442560');
-    expect(res.success).toBe(false);
-    if (!res.success) {
-      expect(res.isUnsupportedType).toBe(true);
-      expect(res.canFallbackToManual).toBe(false);
-      expect(res.error).toMatch(/TV series.*Peaky Blinders/i);
+    expect(res.success).toBe(true);
+    if (res.success) {
+      expect(res.data.mediaType).toBe('SERIES');
+      expect(res.data.title).toMatch(/Peaky Blinders/i);
     }
 
-    // Also verify createMovie rejects it
-    service.getMovieByImdbId = vi.fn().mockResolvedValue(null);
-    await expect(
-      service.createMovie(
-        { imdbId: 'tt2442560', title: 'Peaky Blinders' },
-        'user_123',
-      ),
-    ).rejects.toThrow(/TV series.*Peaky Blinders/i);
-  });
-
-  it('13. Provides unsupportedTitleInfo for Crew Girl (tt38218082) and allows forceAsMovie import', async () => {
-    const res = await tmdbModule.fetchMovieMetadataByImdbId('tt38218082');
-    expect(res.success).toBe(false);
-    if (!res.success) {
-      expect(res.isUnsupportedType).toBe(true);
-      expect(res.error).toMatch(/TV series.*Crew Girl/i);
-      expect(res.unsupportedTitleInfo?.title).toMatch(/Crew Girl/i);
-    }
-
-    // Verify createMovie succeeds with forceAsMovie: true
+    // Also verify createMovie saves it with mediaType: 'SERIES'
     service.getMovieByImdbId = vi.fn().mockResolvedValue(null);
     const movie = await service.createMovie(
+      {
+        imdbId: 'tt2442560',
+        title: 'Peaky Blinders',
+        mediaType: 'SERIES',
+        totalSeasons: 6,
+      },
+      'user_123',
+    );
+    expect(movie.title).toBe('Peaky Blinders');
+    expect(movie.mediaType).toBe('SERIES');
+    expect(movie.totalSeasons).toBe(6);
+  });
+
+  it('13. Supports Crew Girl (tt38218082) as a series and distinguishes media types', async () => {
+    const res = await tmdbModule.fetchMovieMetadataByImdbId('tt38218082');
+    expect(res.success).toBe(true);
+    if (res.success) {
+      expect(res.data.mediaType).toBe('SERIES');
+      expect(res.data.title).toMatch(/Crew Girl/i);
+    }
+
+    // Verify createMovie succeeds with mediaType: 'SERIES'
+    service.getMovieByImdbId = vi.fn().mockResolvedValue(null);
+    const series = await service.createMovie(
       {
         imdbId: 'tt38218082',
         title: 'Crew Girl',
         releaseYear: 2026,
-        forceAsMovie: true,
+        mediaType: 'SERIES',
       },
       'user_123',
     );
-    expect(movie.title).toBe('Crew Girl');
-    expect(movie.imdbId).toBe('tt38218082');
-    expect(movie.status).toBe('TO_DO');
+    expect(series.title).toBe('Crew Girl');
+    expect(series.imdbId).toBe('tt38218082');
+    expect(series.mediaType).toBe('SERIES');
+    expect(series.status).toBe('TO_DO');
   });
 });

@@ -4,6 +4,9 @@ import { integer, sqliteTable, text, uniqueIndex, index } from 'drizzle-orm/sqli
 export const WATCH_STATUSES = ['TO_DO', 'DOING', 'DONE'] as const;
 export type WatchStatus = (typeof WATCH_STATUSES)[number];
 
+export const MEDIA_TYPES = ['MOVIE', 'SERIES'] as const;
+export type MediaType = (typeof MEDIA_TYPES)[number];
+
 export const movies = sqliteTable(
   'movies',
   {
@@ -14,11 +17,18 @@ export const movies = sqliteTable(
     tmdbId: integer('tmdb_id'),
     title: text('title').notNull(),
     originalTitle: text('original_title'),
+    mediaType: text('media_type', { enum: ['MOVIE', 'SERIES'] })
+      .notNull()
+      .default('MOVIE'),
     releaseDate: text('release_date'),
     releaseYear: integer('release_year'),
     posterPath: text('poster_path'),
     overview: text('overview'),
     runtimeMinutes: integer('runtime_minutes'),
+    totalSeasons: integer('total_seasons'),
+    totalEpisodes: integer('total_episodes'),
+    currentSeason: integer('current_season'),
+    currentEpisode: integer('current_episode'),
     genres: text('genres'), // JSON array string, e.g. ["Action", "Sci-Fi"]
     status: text('status', { enum: ['TO_DO', 'DOING', 'DONE'] })
       .notNull()
@@ -39,6 +49,7 @@ export const movies = sqliteTable(
     index('idx_movies_user_status').on(table.userId, table.status),
     index('idx_movies_user_created').on(table.userId, table.createdAt),
     index('idx_movies_user_title').on(table.userId, table.title),
+    index('idx_movies_user_type').on(table.userId, table.mediaType),
   ],
 );
 

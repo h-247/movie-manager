@@ -26,6 +26,8 @@ export default function HomePage() {
     todo: 0,
     doing: 0,
     done: 0,
+    totalMovies: 0,
+    totalSeries: 0,
     genres: [] as { name: string; count: number }[],
   });
   const [isLoading, setIsLoading] = useState(true);
@@ -37,6 +39,7 @@ export default function HomePage() {
   // Filters and sorting state
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
+  const [mediaTypeFilter, setMediaTypeFilter] = useState('ALL');
   const [genreFilter, setGenreFilter] = useState('');
   const [yearFilter, setYearFilter] = useState('');
   const [sortBy, setSortBy] = useState('added_desc');
@@ -73,6 +76,9 @@ export default function HomePage() {
       if (statusFilter && statusFilter !== 'ALL') {
         params.set('status', statusFilter);
       }
+      if (mediaTypeFilter && mediaTypeFilter !== 'ALL') {
+        params.set('type', mediaTypeFilter);
+      }
       if (search.trim()) {
         params.set('search', search.trim());
       }
@@ -96,7 +102,7 @@ export default function HomePage() {
     } finally {
       setIsLoading(false);
     }
-  }, [statusFilter, search, genreFilter, yearFilter, sortBy]);
+  }, [statusFilter, mediaTypeFilter, search, genreFilter, yearFilter, sortBy]);
 
   // Initial load and filter change
   useEffect(() => {
@@ -199,6 +205,7 @@ export default function HomePage() {
   const handleResetFilters = () => {
     setSearch('');
     setStatusFilter('ALL');
+    setMediaTypeFilter('ALL');
     setGenreFilter('');
     setYearFilter('');
     setSortBy('added_desc');
@@ -228,10 +235,10 @@ export default function HomePage() {
             </div>
             <div>
               <h1 className="text-base sm:text-lg font-bold tracking-tight text-white">
-                Movie Watchlist Manager
+                Movie & Series Watchlist
               </h1>
               <p className="hidden sm:block text-[11px] text-neutral-400">
-                Personal movie tracking with IMDb imports
+                Personal movie & TV series tracking with IMDb imports
               </p>
             </div>
           </div>
@@ -259,14 +266,14 @@ export default function HomePage() {
               <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
             </button>
 
-            {/* Prominent Import Movie Button */}
+            {/* Prominent Import Title Button */}
             <button
               type="button"
               onClick={() => setIsImportOpen(true)}
               className="flex items-center gap-1.5 rounded-xl bg-white px-3.5 py-2 text-xs sm:text-sm font-semibold text-black shadow-sm hover:bg-neutral-200 transition-colors"
             >
               <Plus className="h-4 w-4" />
-              <span>Import Movie</span>
+              <span>Import Title</span>
             </button>
           </div>
         </div>
@@ -291,6 +298,8 @@ export default function HomePage() {
             onSearchChange={setSearch}
             status={statusFilter}
             onStatusChange={setStatusFilter}
+            mediaType={mediaTypeFilter}
+            onMediaTypeChange={setMediaTypeFilter}
             genre={genreFilter}
             onGenreChange={setGenreFilter}
             year={yearFilter}
@@ -337,7 +346,7 @@ export default function HomePage() {
               {stats.total === 0 ? (
                 <>
                   <h3 className="text-base font-semibold text-white">
-                    No movies yet
+                    No items yet
                   </h3>
                   <p className="mt-1 max-w-sm text-xs text-neutral-400">
                     Import an IMDb link to start your watchlist.
@@ -348,16 +357,16 @@ export default function HomePage() {
                     className="mt-5 flex items-center gap-1.5 rounded-xl bg-white px-5 py-2.5 text-xs font-semibold text-black hover:bg-neutral-200 transition-colors shadow-sm"
                   >
                     <Plus className="h-4 w-4" />
-                    Import Movie
+                    Import Title
                   </button>
                 </>
               ) : (
                 <>
                   <h3 className="text-base font-semibold text-white">
-                    No movies found
+                    No titles found
                   </h3>
                   <p className="mt-1 max-w-sm text-xs text-neutral-400">
-                    No movies matched your current search and filter criteria.
+                    No titles matched your current search and filter criteria.
                   </p>
                   <button
                     type="button"

@@ -23,7 +23,7 @@ export function AboutDialog({ isOpen, onClose }: AboutDialogProps) {
           <div className="flex items-center gap-2">
             <Film className="h-5 w-5 text-neutral-300" />
             <h3 className="text-base font-semibold text-white">
-              About Movie Watchlist Manager
+              About Movie & Series Watchlist
             </h3>
           </div>
           <button
@@ -37,8 +37,8 @@ export function AboutDialog({ isOpen, onClose }: AboutDialogProps) {
 
         <div className="mt-4 space-y-4 text-xs leading-relaxed text-neutral-300">
           <p>
-            <strong className="text-white">Movie Watchlist Manager</strong> is a
-            clean, personal movie-tracking application that synchronizes your
+            <strong className="text-white">Movie & Series Watchlist Manager</strong> is a
+            clean, personal movie and TV series tracking application that synchronizes your
             watching progress across laptops and smartphones.
           </p>
 

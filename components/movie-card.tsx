@@ -109,12 +109,26 @@ export function MovieCard({
             >
               {movie.title}
             </h3>
-            {movie.releaseYear && (
-              <span className="shrink-0 text-xs font-medium text-neutral-400">
-                {movie.releaseYear}
-              </span>
-            )}
+            <div className="flex items-center gap-1.5 shrink-0">
+              {movie.mediaType === 'SERIES' && (
+                <span className="rounded bg-purple-500/20 px-1.5 py-0.5 text-[10px] font-semibold text-purple-300 border border-purple-500/30">
+                  Series
+                </span>
+              )}
+              {movie.releaseYear && (
+                <span className="shrink-0 text-xs font-medium text-neutral-400">
+                  {movie.releaseYear}
+                </span>
+              )}
+            </div>
           </div>
+
+          {movie.mediaType === 'SERIES' && (movie.totalSeasons || movie.totalEpisodes) && (
+            <p className="mt-1 text-[11px] text-neutral-400">
+              {movie.totalSeasons ? `${movie.totalSeasons} Season${movie.totalSeasons > 1 ? 's' : ''}` : ''}
+              {movie.totalEpisodes ? ` • ${movie.totalEpisodes} Episodes` : ''}
+            </p>
+          )}
 
           {/* Genres Chips */}
           {genresList.length > 0 && (

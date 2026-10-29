@@ -8,6 +8,13 @@
       "when": 1793097650161,
       "tag": "0000_equal_skaar",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1793251121350,
+      "tag": "0001_chubby_zaladane",
+      "breakpoints": true
     }
   ]
 }

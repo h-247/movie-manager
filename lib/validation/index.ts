@@ -2,6 +2,8 @@ import { z } from 'zod';
 
 export const watchStatusSchema = z.enum(['TO_DO', 'DOING', 'DONE']);
 
+export const mediaTypeSchema = z.enum(['MOVIE', 'SERIES']);
+
 export const imdbIdSchema = z
   .string()
   .trim()
@@ -13,11 +15,16 @@ export const createMovieSchema = z.object({
   tmdbId: z.number().int().positive().nullable().optional(),
   title: z.string().trim().min(1, 'Title is required'),
   originalTitle: z.string().trim().nullable().optional(),
+  mediaType: mediaTypeSchema.default('MOVIE'),
   releaseDate: z.string().trim().nullable().optional(),
   releaseYear: z.number().int().min(1888).max(2100).nullable().optional(),
   posterPath: z.string().trim().nullable().optional(),
   overview: z.string().trim().nullable().optional(),
   runtimeMinutes: z.number().int().positive().nullable().optional(),
+  totalSeasons: z.number().int().positive().nullable().optional(),
+  totalEpisodes: z.number().int().positive().nullable().optional(),
+  currentSeason: z.number().int().positive().nullable().optional(),
+  currentEpisode: z.number().int().positive().nullable().optional(),
   genres: z.union([z.array(z.string()), z.string()]).optional(),
   status: watchStatusSchema.default('TO_DO'),
   personalRating: z.number().int().min(1).max(10).nullable().optional(),
@@ -29,6 +36,7 @@ export const createMovieSchema = z.object({
 
 export const updateMovieSchema = z.object({
   status: watchStatusSchema.optional(),
+  mediaType: mediaTypeSchema.optional(),
   personalRating: z.number().int().min(1).max(10).nullable().optional(),
   notes: z.string().nullable().optional(),
   startedAt: z.string().nullable().optional(),
@@ -40,6 +48,10 @@ export const updateMovieSchema = z.object({
   posterPath: z.string().trim().nullable().optional(),
   overview: z.string().trim().nullable().optional(),
   runtimeMinutes: z.number().int().positive().nullable().optional(),
+  totalSeasons: z.number().int().positive().nullable().optional(),
+  totalEpisodes: z.number().int().positive().nullable().optional(),
+  currentSeason: z.number().int().positive().nullable().optional(),
+  currentEpisode: z.number().int().positive().nullable().optional(),
   genres: z.union([z.array(z.string()), z.string()]).optional(),
 });
 
@@ -54,6 +66,7 @@ export const bulkImportInputSchema = z.object({
 
 export const movieQuerySchema = z.object({
   status: z.enum(['ALL', 'TO_DO', 'DOING', 'DONE']).optional().default('ALL'),
+  type: z.enum(['ALL', 'MOVIE', 'SERIES']).optional().default('ALL'),
   search: z.string().optional(),
   genre: z.string().optional(),
   year: z.coerce.number().int().optional(),

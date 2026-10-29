@@ -5,6 +5,8 @@ import type { WatchStatus } from '@/db/schema';
 interface DashboardStatsProps {
   stats: {
     total: number;
+    totalMovies?: number;
+    totalSeries?: number;
     todo: number;
     doing: number;
     done: number;
@@ -23,8 +25,12 @@ export function DashboardStats({
   const cards = [
     {
       id: 'ALL',
-      label: 'Total Movies',
+      label: 'Total',
       count: stats.total,
+      subtitle:
+        stats.totalMovies !== undefined && stats.totalSeries !== undefined
+          ? `${stats.totalMovies} movies • ${stats.totalSeries} series`
+          : undefined,
       icon: Film,
       colorClass: 'text-neutral-200',
       activeBorder: 'border-white ring-1 ring-white/20',
@@ -102,6 +108,11 @@ export function DashboardStats({
                 className={`h-2 w-2 rounded-full ${card.accentDot} opacity-80`}
               />
             </div>
+            {card.subtitle && (
+              <span className="mt-1 text-[11px] font-medium text-neutral-400">
+                {card.subtitle}
+              </span>
+            )}
           </button>
         );
       })}

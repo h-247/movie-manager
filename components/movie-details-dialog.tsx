@@ -47,9 +47,14 @@ export function MovieDetailsDialog({
   // Editable metadata fields
   const [editTitle, setEditTitle] = useState('');
   const [editOriginalTitle, setEditOriginalTitle] = useState('');
+  const [editMediaType, setEditMediaType] = useState<'MOVIE' | 'SERIES'>('MOVIE');
   const [editReleaseYear, setEditReleaseYear] = useState<string>('');
   const [editReleaseDate, setEditReleaseDate] = useState('');
   const [editRuntime, setEditRuntime] = useState<string>('');
+  const [editTotalSeasons, setEditTotalSeasons] = useState<string>('');
+  const [editTotalEpisodes, setEditTotalEpisodes] = useState<string>('');
+  const [editCurrentSeason, setEditCurrentSeason] = useState<string>('');
+  const [editCurrentEpisode, setEditCurrentEpisode] = useState<string>('');
   const [editOverview, setEditOverview] = useState('');
   const [editGenres, setEditGenres] = useState('');
   const [editPosterPath, setEditPosterPath] = useState('');
@@ -63,9 +68,14 @@ export function MovieDetailsDialog({
 
       setEditTitle(movie.title);
       setEditOriginalTitle(movie.originalTitle ?? '');
+      setEditMediaType(movie.mediaType || 'MOVIE');
       setEditReleaseYear(movie.releaseYear ? String(movie.releaseYear) : '');
       setEditReleaseDate(movie.releaseDate ?? '');
       setEditRuntime(movie.runtimeMinutes ? String(movie.runtimeMinutes) : '');
+      setEditTotalSeasons(movie.totalSeasons ? String(movie.totalSeasons) : '');
+      setEditTotalEpisodes(movie.totalEpisodes ? String(movie.totalEpisodes) : '');
+      setEditCurrentSeason(movie.currentSeason ? String(movie.currentSeason) : '');
+      setEditCurrentEpisode(movie.currentEpisode ? String(movie.currentEpisode) : '');
       setEditOverview(movie.overview ?? '');
       setEditPosterPath(movie.posterPath ?? '');
 
@@ -129,9 +139,14 @@ export function MovieDetailsDialog({
       await onUpdate(movie.id, {
         title: editTitle.trim() || movie.title,
         originalTitle: editOriginalTitle.trim() || null,
+        mediaType: editMediaType,
         releaseYear: editReleaseYear ? parseInt(editReleaseYear, 10) : null,
         releaseDate: editReleaseDate.trim() || null,
         runtimeMinutes: editRuntime ? parseInt(editRuntime, 10) : null,
+        totalSeasons: editTotalSeasons ? parseInt(editTotalSeasons, 10) : null,
+        totalEpisodes: editTotalEpisodes ? parseInt(editTotalEpisodes, 10) : null,
+        currentSeason: editCurrentSeason ? parseInt(editCurrentSeason, 10) : null,
+        currentEpisode: editCurrentEpisode ? parseInt(editCurrentEpisode, 10) : null,
         overview: editOverview.trim() || null,
         posterPath: editPosterPath.trim() || null,
         genres: parsedGenres,
@@ -342,9 +357,20 @@ export function MovieDetailsDialog({
                 /* Metadata View */
                 <>
                   <div>
-                    <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-[#ECECEC]">
-                      {movie.title}
-                    </h2>
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-[#ECECEC]">
+                        {movie.title}
+                      </h2>
+                      <span
+                        className={`rounded px-2 py-0.5 text-xs font-semibold ${
+                          movie.mediaType === 'SERIES'
+                            ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
+                            : 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
+                        }`}
+                      >
+                        {movie.mediaType === 'SERIES' ? 'TV Series' : 'Movie'}
+                      </span>
+                    </div>
                     {movie.originalTitle &&
                       movie.originalTitle !== movie.title && (
                         <p className="text-xs text-neutral-400 italic">
@@ -367,7 +393,53 @@ export function MovieDetailsDialog({
                         {movie.runtimeMinutes} min
                       </span>
                     )}
+                    {movie.mediaType === 'SERIES' && movie.totalSeasons && (
+                      <span className="rounded bg-neutral-800 px-2 py-0.5 text-neutral-300">
+                        {movie.totalSeasons} Season{movie.totalSeasons > 1 ? 's' : ''}
+                      </span>
+                    )}
+                    {movie.mediaType === 'SERIES' && movie.totalEpisodes && (
+                      <span className="rounded bg-neutral-800 px-2 py-0.5 text-neutral-300">
+                        {movie.totalEpisodes} Episodes
+                      </span>
+                    )}
                   </div>
+
+                  {/* Series Watch Progress (when Doing) */}
+                  {movie.mediaType === 'SERIES' && (
+                    <div className="rounded-lg border border-neutral-800 bg-[#1A1A1A] p-2.5 flex items-center justify-between text-xs">
+                      <div>
+                        <span className="text-neutral-400">Progress: </span>
+                        <span className="font-semibold text-white">
+                          Season {movie.currentSeason || 1}, Episode {movie.currentEpisode || 1}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const cur = movie.currentEpisode || 1;
+                            if (cur > 1) {
+                              onUpdate(movie.id, { currentEpisode: cur - 1 });
+                            }
+                          }}
+                          className="rounded bg-[#262626] border border-neutral-700 px-2 py-0.5 text-neutral-300 hover:text-white"
+                        >
+                          - Ep
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const cur = movie.currentEpisode || 1;
+                            onUpdate(movie.id, { currentEpisode: cur + 1 });
+                          }}
+                          className="rounded bg-purple-600 px-2 py-0.5 font-semibold text-white hover:bg-purple-500"
+                        >
+                          + Ep
+                        </button>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Genres */}
                   {genresList.length > 0 && (
