@@ -15,6 +15,23 @@ import type { Movie, WatchStatus } from '@/db/schema';
 import { StatusBadge } from './status-badge';
 import { getFullPosterUrl } from '@/lib/tmdb';
 
+function parseListField(val: string | null | undefined): string[] {
+  if (!val) return [];
+  if (Array.isArray(val)) return val;
+  try {
+    const parsed = JSON.parse(val);
+    if (Array.isArray(parsed)) return parsed.map(String).map((s) => s.trim()).filter(Boolean);
+    if (typeof parsed === 'string' && parsed.trim()) return [parsed.trim()];
+  } catch {
+    // fallback
+  }
+  const cleaned = String(val).replace(/[\[\]"'\\]/g, '').trim();
+  if (cleaned) {
+    return cleaned.split(',').map((s) => s.trim()).filter(Boolean);
+  }
+  return [];
+}
+
 interface MovieDetailsDialogProps {
   movie: Movie | null;
   isOpen: boolean;
@@ -68,21 +85,8 @@ export function MovieDetailsDialog({
       setEditOverview(movie.overview ?? '');
       setEditPosterPath(movie.posterPath ?? '');
 
-      let parsedG: string[] = [];
-      try {
-        if (movie.genres) parsedG = JSON.parse(movie.genres);
-      } catch {
-        // ignore
-      }
-      setEditGenres(parsedG.join(', '));
-
-      let parsedC: string[] = [];
-      try {
-        if (movie.countries) parsedC = JSON.parse(movie.countries);
-      } catch {
-        // ignore
-      }
-      setEditCountries(parsedC.join(', '));
+      setEditGenres(parseListField(movie.genres).join(', '));
+      setEditCountries(parseListField(movie.countries).join(', '));
 
       setIsEditingMetadata(false);
       setImageError(false);
@@ -95,19 +99,8 @@ export function MovieDetailsDialog({
     isEditingMetadata ? editPosterPath : movie.posterPath,
   );
 
-  let genresList: string[] = [];
-  try {
-    if (movie.genres) genresList = JSON.parse(movie.genres);
-  } catch {
-    // ignore
-  }
-
-  let countriesList: string[] = [];
-  try {
-    if (movie.countries) countriesList = JSON.parse(movie.countries);
-  } catch {
-    // ignore
-  }
+  const genresList = parseListField(movie.genres);
+  const countriesList = parseListField(movie.countries);
 
   const handleStatusChange = async (newStatus: WatchStatus) => {
     if (newStatus === movie.status || isSaving) return;

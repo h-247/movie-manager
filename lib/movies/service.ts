@@ -213,9 +213,16 @@ export class MovieService {
 
     let countriesStr: string | null = null;
     if (input.countries) {
-      countriesStr = Array.isArray(input.countries)
-        ? JSON.stringify(input.countries)
-        : input.countries;
+      if (Array.isArray(input.countries)) {
+        countriesStr = JSON.stringify(input.countries);
+      } else if (typeof input.countries === 'string') {
+        const trimmed = input.countries.trim();
+        if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+          countriesStr = trimmed;
+        } else {
+          countriesStr = JSON.stringify(trimmed.split(',').map((s) => s.trim()).filter(Boolean));
+        }
+      }
     }
 
     const canonicalUrl = input.imdbUrl || `https://www.imdb.com/title/${imdbId}/`;
@@ -318,11 +325,18 @@ export class MovieService {
         : input.genres;
     }
     if (input.countries !== undefined) {
-      updates.countries = input.countries === null
-        ? null
-        : Array.isArray(input.countries)
-          ? JSON.stringify(input.countries)
-          : input.countries;
+      if (input.countries === null) {
+        updates.countries = null;
+      } else if (Array.isArray(input.countries)) {
+        updates.countries = JSON.stringify(input.countries);
+      } else if (typeof input.countries === 'string') {
+        const trimmed = input.countries.trim();
+        if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+          updates.countries = trimmed;
+        } else {
+          updates.countries = JSON.stringify(trimmed.split(',').map((s) => s.trim()).filter(Boolean));
+        }
+      }
     }
     if (input.personalRating !== undefined) {
       updates.personalRating = input.personalRating;

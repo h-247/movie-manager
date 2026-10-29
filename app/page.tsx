@@ -333,6 +333,7 @@ export default function HomePage() {
                   movie={movie}
                   onOpenDetails={(m) => setSelectedMovie(m)}
                   onStatusChange={handleStatusChange}
+                  onUpdateMovie={handleUpdateMovie}
                 />
               ))}
             </div>

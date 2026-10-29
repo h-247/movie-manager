@@ -1,49 +1,130 @@
-import React, { useState } from 'react';
-import { ExternalLink, Star, Film, ChevronDown, Check, Globe } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ExternalLink, Star, Film, ChevronDown, Check, Globe, Edit2, X } from 'lucide-react';
 import type { Movie, WatchStatus } from '@/db/schema';
 import { StatusBadge } from './status-badge';
 import { getFullPosterUrl } from '@/lib/tmdb';
+
+function parseListField(val: string | null | undefined): string[] {
+  if (!val) return [];
+  if (Array.isArray(val)) return val;
+  try {
+    const parsed = JSON.parse(val);
+    if (Array.isArray(parsed)) return parsed.map(String).map((s) => s.trim()).filter(Boolean);
+    if (typeof parsed === 'string' && parsed.trim()) return [parsed.trim()];
+  } catch {
+    // fallback
+  }
+  const cleaned = String(val).replace(/[\[\]"'\\]/g, '').trim();
+  if (cleaned) {
+    return cleaned.split(',').map((s) => s.trim()).filter(Boolean);
+  }
+  return [];
+}
 
 interface MovieCardProps {
   movie: Movie;
   onOpenDetails: (movie: Movie) => void;
   onStatusChange: (movieId: string, newStatus: WatchStatus) => Promise<void>;
+  onUpdateMovie?: (movieId: string, updates: Record<string, any>) => Promise<void>;
 }
 
 export function MovieCard({
   movie,
   onOpenDetails,
   onStatusChange,
+  onUpdateMovie,
 }: MovieCardProps) {
   const [imageError, setImageError] = useState(false);
   const [isChangingStatus, setIsChangingStatus] = useState(false);
   const [showStatusMenu, setShowStatusMenu] = useState(false);
 
+  // Series progress edit state on card
+  const [isEditingProgress, setIsEditingProgress] = useState(false);
+  const [editSeasonVal, setEditSeasonVal] = useState<number | string>(movie.currentSeason || 1);
+  const [editEpisodeVal, setEditEpisodeVal] = useState<number | string>(movie.currentEpisode || 1);
+  const [isUpdatingProgress, setIsUpdatingProgress] = useState(false);
+
+  useEffect(() => {
+    setEditSeasonVal(movie.currentSeason || 1);
+    setEditEpisodeVal(movie.currentEpisode || 1);
+  }, [movie.currentSeason, movie.currentEpisode]);
+
   const posterUrl = getFullPosterUrl(movie.posterPath);
 
-  let genresList: string[] = [];
-  if (movie.genres) {
-    try {
-      const parsed = JSON.parse(movie.genres);
-      if (Array.isArray(parsed)) {
-        genresList = parsed;
-      }
-    } catch {
-      // ignore
-    }
-  }
+  const genresList = parseListField(movie.genres);
+  const countriesList = parseListField(movie.countries);
 
-  let countriesList: string[] = [];
-  if (movie.countries) {
+  const handleStepSeason = async (e: React.MouseEvent, delta: number) => {
+    e.stopPropagation();
+    if (isUpdatingProgress || !onUpdateMovie) return;
+    const totalSeas = movie.totalSeasons || 1;
+    const curS = movie.currentSeason || 1;
+    const nextS = Math.min(Math.max(curS + delta, 1), totalSeas);
+    if (nextS === curS) return;
+
     try {
-      const parsed = JSON.parse(movie.countries);
-      if (Array.isArray(parsed)) {
-        countriesList = parsed;
-      }
-    } catch {
-      // ignore
+      setIsUpdatingProgress(true);
+      await onUpdateMovie(movie.id, { currentSeason: nextS, currentEpisode: 1 });
+    } finally {
+      setIsUpdatingProgress(false);
     }
-  }
+  };
+
+  const handleStepEpisode = async (e: React.MouseEvent, delta: number) => {
+    e.stopPropagation();
+    if (isUpdatingProgress || !onUpdateMovie) return;
+    const totalSeas = movie.totalSeasons || 1;
+    const totalEps = movie.totalEpisodes || null;
+    const epsPerSeason = totalEps && totalSeas ? Math.ceil(totalEps / totalSeas) : (totalEps || 50);
+
+    const curS = Math.min(Math.max(movie.currentSeason || 1, 1), totalSeas);
+    const curE = Math.min(Math.max(movie.currentEpisode || 1, 1), epsPerSeason);
+    const nextE = curE + delta;
+
+    try {
+      setIsUpdatingProgress(true);
+      if (nextE > epsPerSeason) {
+        if (curS < totalSeas) {
+          await onUpdateMovie(movie.id, { currentSeason: curS + 1, currentEpisode: 1 });
+        } else {
+          await onUpdateMovie(movie.id, { status: 'DONE', currentEpisode: epsPerSeason });
+        }
+      } else if (nextE < 1) {
+        if (curS > 1) {
+          await onUpdateMovie(movie.id, { currentSeason: curS - 1, currentEpisode: epsPerSeason });
+        }
+      } else {
+        await onUpdateMovie(movie.id, { currentEpisode: nextE });
+      }
+    } finally {
+      setIsUpdatingProgress(false);
+    }
+  };
+
+  const handleSaveDirectProgress = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (isUpdatingProgress || !onUpdateMovie) return;
+    const totalSeas = movie.totalSeasons || 99;
+    const totalEps = movie.totalEpisodes || null;
+    const epsPerSeason = totalEps && movie.totalSeasons ? Math.ceil(totalEps / movie.totalSeasons) : (totalEps || 999);
+
+    const s = parseInt(String(editSeasonVal), 10);
+    const ep = parseInt(String(editEpisodeVal), 10);
+
+    const validS = isNaN(s) ? 1 : Math.min(Math.max(1, s), totalSeas);
+    const validEp = isNaN(ep) ? 1 : Math.min(Math.max(1, ep), epsPerSeason);
+
+    try {
+      setIsUpdatingProgress(true);
+      await onUpdateMovie(movie.id, {
+        currentSeason: validS,
+        currentEpisode: validEp,
+      });
+      setIsEditingProgress(false);
+    } finally {
+      setIsUpdatingProgress(false);
+    }
+  };
 
   const handleQuickStatus = async (
     e: React.MouseEvent,
@@ -137,15 +218,19 @@ export function MovieCard({
 
           {/* Production Country */}
           {countriesList.length > 0 && (
-            <div className="mt-1 flex items-center gap-1 text-[11px] text-neutral-400">
-              <Globe className="h-3 w-3 shrink-0 text-neutral-500" />
-              <span className="truncate" title={`Production: ${countriesList.join(', ')}`}>
-                {countriesList.join(', ')}
+            <div className="mt-1.5 flex items-center gap-1.5">
+              <span
+                className="inline-flex items-center gap-1.5 rounded-md bg-cyan-950/50 px-2 py-0.5 text-[11px] font-medium text-cyan-200 border border-cyan-700/50"
+                title={`Production Country: ${countriesList.join(', ')}`}
+              >
+                <Globe className="h-3 w-3 text-cyan-400 shrink-0" />
+                <span className="font-bold text-cyan-400 text-[10px] uppercase tracking-wider">Country:</span>
+                <span className="font-medium text-cyan-100">{countriesList.join(', ')}</span>
               </span>
             </div>
           )}
 
-          {/* Series Progress on Card */}
+          {/* Series Progress on Card (Editable) */}
           {movie.mediaType === 'SERIES' && (() => {
             const totalSeas = movie.totalSeasons || 1;
             const totalEps = movie.totalEpisodes || null;
@@ -156,22 +241,95 @@ export function MovieCard({
             const totalWatched = epsPerSeason ? (curSeason - 1) * epsPerSeason + curEpisode : null;
             const progressPercent = (totalEps && totalWatched) ? Math.min(Math.round((totalWatched / totalEps) * 100), 100) : null;
 
+            if (isEditingProgress) {
+              return (
+                <div
+                  className="mt-2.5 rounded-lg border border-purple-500/40 bg-purple-950/40 p-2.5 text-xs space-y-2"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="font-semibold text-purple-200">Edit Series Progress</span>
+                    <span className="text-[10px] text-neutral-400">Direct input</span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 text-[11px]">
+                    <div>
+                      <label className="block text-[10px] text-neutral-400 mb-0.5">Season:</label>
+                      <input
+                        type="number"
+                        min={1}
+                        max={movie.totalSeasons || 99}
+                        value={editSeasonVal}
+                        onChange={(e) => setEditSeasonVal(e.target.value)}
+                        className="w-full rounded bg-[#1A1A1A] border border-neutral-700 px-2 py-1 text-xs text-white focus:border-purple-500 focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] text-neutral-400 mb-0.5">Episode:</label>
+                      <input
+                        type="number"
+                        min={1}
+                        max={epsPerSeason || 999}
+                        value={editEpisodeVal}
+                        onChange={(e) => setEditEpisodeVal(e.target.value)}
+                        className="w-full rounded bg-[#1A1A1A] border border-neutral-700 px-2 py-1 text-xs text-white focus:border-purple-500 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-end gap-1.5 pt-1">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsEditingProgress(false);
+                      }}
+                      className="rounded bg-[#262626] px-2 py-1 text-[11px] text-neutral-300 hover:text-white"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      disabled={isUpdatingProgress}
+                      onClick={handleSaveDirectProgress}
+                      className="flex items-center gap-1 rounded bg-purple-600 px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-purple-500"
+                    >
+                      <Check className="h-3 w-3" />
+                      Save
+                    </button>
+                  </div>
+                </div>
+              );
+            }
+
             return (
-              <div className="mt-2.5 rounded-lg border border-purple-500/20 bg-purple-950/20 p-2 text-xs">
+              <div
+                className="mt-2.5 rounded-lg border border-purple-500/20 bg-purple-950/20 p-2 text-xs"
+                onClick={(e) => e.stopPropagation()}
+              >
                 <div className="flex items-center justify-between text-[11px]">
-                  <span className="font-semibold text-purple-300">Series Progress</span>
-                  {progressPercent !== null && (
-                    <span className="font-semibold text-purple-400">{progressPercent}%</span>
-                  )}
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-semibold text-purple-300">Series Progress</span>
+                    {progressPercent !== null && (
+                      <span className="rounded bg-purple-500/30 px-1.5 py-0.2 text-[10px] font-semibold text-purple-200">
+                        {progressPercent}%
+                      </span>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsEditingProgress(true);
+                    }}
+                    title="Edit Series Progress"
+                    className="flex items-center gap-1 text-[10px] text-purple-300/80 hover:text-white bg-purple-900/40 hover:bg-purple-800/60 px-1.5 py-0.5 rounded transition-colors"
+                  >
+                    <Edit2 className="h-2.5 w-2.5" />
+                    <span>Edit</span>
+                  </button>
                 </div>
-                <div className="mt-1 flex items-center justify-between text-[11px] text-neutral-300">
-                  <span>
-                    Season <strong className="text-white">{curSeason}</strong>{movie.totalSeasons ? `/${movie.totalSeasons}` : ''}
-                  </span>
-                  <span>
-                    Episode <strong className="text-white">{curEpisode}</strong>{epsPerSeason ? `/${epsPerSeason}` : ''}
-                  </span>
-                </div>
+
                 {progressPercent !== null && (
                   <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-neutral-800">
                     <div
@@ -180,6 +338,63 @@ export function MovieCard({
                     />
                   </div>
                 )}
+
+                {/* Quick Steppers: Season & Episode */}
+                <div className="mt-2 flex items-center justify-between gap-1 pt-1.5 border-t border-purple-500/10 text-[11px]">
+                  {/* Season Stepper */}
+                  <div className="flex items-center gap-1">
+                    <span className="text-neutral-400 text-[10px]">S:</span>
+                    <button
+                      type="button"
+                      disabled={curSeason <= 1 || isUpdatingProgress}
+                      onClick={(e) => handleStepSeason(e, -1)}
+                      title="Previous Season"
+                      className="flex h-5 w-5 items-center justify-center rounded bg-[#1A1A1A] border border-neutral-700 text-neutral-300 hover:text-white hover:bg-neutral-800 disabled:opacity-40 transition-colors"
+                    >
+                      -
+                    </button>
+                    <span className="min-w-[18px] text-center font-bold text-white text-[11px]">
+                      {curSeason}
+                      {movie.totalSeasons ? <span className="text-[10px] text-neutral-400 font-normal">/{movie.totalSeasons}</span> : null}
+                    </span>
+                    <button
+                      type="button"
+                      disabled={(movie.totalSeasons ? curSeason >= movie.totalSeasons : false) || isUpdatingProgress}
+                      onClick={(e) => handleStepSeason(e, 1)}
+                      title="Next Season"
+                      className="flex h-5 w-5 items-center justify-center rounded bg-[#1A1A1A] border border-neutral-700 text-neutral-300 hover:text-white hover:bg-neutral-800 disabled:opacity-40 transition-colors"
+                    >
+                      +
+                    </button>
+                  </div>
+
+                  {/* Episode Stepper */}
+                  <div className="flex items-center gap-1">
+                    <span className="text-neutral-400 text-[10px]">Ep:</span>
+                    <button
+                      type="button"
+                      disabled={(curSeason <= 1 && curEpisode <= 1) || isUpdatingProgress}
+                      onClick={(e) => handleStepEpisode(e, -1)}
+                      title="Previous Episode"
+                      className="flex h-5 w-5 items-center justify-center rounded bg-[#1A1A1A] border border-neutral-700 text-neutral-300 hover:text-white hover:bg-neutral-800 disabled:opacity-40 transition-colors"
+                    >
+                      -
+                    </button>
+                    <span className="min-w-[18px] text-center font-bold text-white text-[11px]">
+                      {curEpisode}
+                      {epsPerSeason ? <span className="text-[10px] text-neutral-400 font-normal">/{epsPerSeason}</span> : null}
+                    </span>
+                    <button
+                      type="button"
+                      disabled={isUpdatingProgress}
+                      onClick={(e) => handleStepEpisode(e, 1)}
+                      title="Next Episode"
+                      className="flex h-5 items-center justify-center rounded bg-purple-600 px-1.5 text-[10px] font-bold text-white hover:bg-purple-500 disabled:opacity-40 transition-colors"
+                    >
+                      + Ep
+                    </button>
+                  </div>
+                </div>
               </div>
             );
           })()}
