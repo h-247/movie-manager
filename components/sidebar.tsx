@@ -241,16 +241,23 @@ export function Sidebar({
         <div className="flex h-full w-72 flex-col justify-between overflow-y-auto p-3.5 scrollbar-thin scrollbar-thumb-neutral-800">
           <div className="space-y-3.5">
             {/* Top Bar with Sidebar Toggle & Actions (ChatGPT style) */}
-            <div className="flex items-center justify-between gap-2 pb-1">
+            <div className="flex items-center justify-between pb-1">
               <button
                 type="button"
                 onClick={onToggle}
-                title="Collapse sidebar"
+                title="Close sidebar"
                 className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-800 hover:text-white transition-colors"
               >
-                <PanelLeft className="h-4 w-4" />
+                <PanelLeft className="h-4.5 w-4.5" />
               </button>
-              <div className="text-xs font-medium text-neutral-500">Sidebar</div>
+              <button
+                type="button"
+                onClick={onOpenImport}
+                title="Import Title"
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-800 hover:text-white transition-colors"
+              >
+                <SquarePen className="h-4.5 w-4.5" />
+              </button>
             </div>
 
             {/* Action Buttons */}

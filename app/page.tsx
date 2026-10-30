@@ -261,34 +261,15 @@ export default function HomePage() {
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 min-h-screen">
-        {/* Top Header Bar */}
-        <header className="sticky top-0 z-20 flex h-12 items-center justify-between border-b border-neutral-800/80 bg-[#1E1E1E]/95 px-4 sm:px-6 backdrop-blur-md">
-          <div className="flex items-center gap-3">
-            {/* Mobile Sidebar Toggle Button */}
-            <button
-              type="button"
-              onClick={() => setIsSidebarOpen((prev) => !prev)}
-              title={isSidebarOpen ? 'Close sidebar' : 'Open sidebar'}
-              className="md:hidden flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-800 bg-[#262626] text-neutral-400 hover:text-white transition-colors"
-            >
-              <PanelLeft className="h-4 w-4" />
-            </button>
-            <div className="flex items-center gap-2">
-              <span className="text-xs sm:text-sm font-semibold text-white">
-                {statusFilter === 'ALL'
-                  ? 'All Titles'
-                  : statusFilter === 'TO_DO'
-                  ? 'To Do'
-                  : statusFilter === 'DOING'
-                  ? 'Doing'
-                  : 'Done'}
-              </span>
-              <span className="rounded-full bg-neutral-800 px-2 py-0.5 text-[11px] font-medium text-neutral-400">
-                {movies.length} {movies.length === 1 ? 'item' : 'items'}
-              </span>
-            </div>
-          </div>
-        </header>
+        {/* Floating Mobile Sidebar Toggle */}
+        <button
+          type="button"
+          onClick={() => setIsSidebarOpen((prev) => !prev)}
+          title={isSidebarOpen ? 'Close sidebar' : 'Open sidebar'}
+          className="md:hidden fixed top-3 left-3 z-30 flex h-9 w-9 items-center justify-center rounded-xl border border-neutral-800 bg-[#262626]/90 backdrop-blur-sm text-neutral-300 shadow-lg hover:text-white transition-colors"
+        >
+          <PanelLeft className="h-4 w-4" />
+        </button>
 
         {/* Main Content Grid */}
         <main className="flex-1 px-4 py-4 sm:px-6 sm:py-6">
