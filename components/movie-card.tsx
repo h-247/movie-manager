@@ -205,7 +205,7 @@ export function MovieCard({
             <div className="flex items-center gap-1.5 shrink-0 pt-0.5">
               {movie.mediaType === 'SERIES' && (
                 <span className="rounded bg-purple-500/20 px-1.5 py-0.5 text-[10px] font-semibold text-purple-300 border border-purple-500/30">
-                  Series • Ep {movie.currentEpisode || 1}
+                  S{movie.currentSeason || 1} E{movie.currentEpisode || 1}
                 </span>
               )}
               {movie.releaseYear && (
@@ -248,7 +248,9 @@ export function MovieCard({
                 >
                   <div className="flex items-center justify-between text-[11px]">
                     <span className="font-semibold text-purple-200">Edit Series Progress</span>
-                    <span className="text-[10px] text-purple-300 font-medium">Current Episode: {curEpisode}</span>
+                    <span className="rounded bg-purple-900/60 px-1.5 py-0.5 text-[10px] font-bold text-purple-200 border border-purple-500/30">
+                      S{curSeason} E{curEpisode}
+                    </span>
                   </div>
 
                   <div className="grid grid-cols-2 gap-2 text-[11px]">
@@ -334,13 +336,13 @@ export function MovieCard({
                   </button>
                 </div>
 
-                {/* Show Current Episode prominently */}
+                {/* Show Series Progress in S1 E1 format */}
                 <div className="mt-1 flex items-center justify-between text-[11px] text-neutral-300">
                   <span className="text-neutral-400">
                     Season <strong className="text-white">{curSeason}</strong>{movie.totalSeasons ? `/${movie.totalSeasons}` : ''}
                   </span>
-                  <span className="rounded bg-purple-500/20 px-1.5 py-0.5 text-[11px] font-medium text-purple-200 border border-purple-500/30">
-                    Current Episode: <strong className="text-white font-bold">{curEpisode}</strong>{epsPerSeason ? `/${epsPerSeason}` : ''}
+                  <span className="rounded bg-purple-500/25 px-2 py-0.5 text-[11px] font-bold text-purple-200 border border-purple-500/40 tracking-wide">
+                    S{curSeason} E{curEpisode}
                   </span>
                 </div>
 
