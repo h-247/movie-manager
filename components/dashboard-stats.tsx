@@ -33,7 +33,7 @@ export function DashboardStats({
           : undefined,
       icon: Film,
       colorClass: 'text-neutral-200',
-      activeBorder: 'border-white ring-1 ring-white/20',
+      activeBorder: 'border-white ring-1 ring-white/20 bg-[#2A2A2A]',
       accentDot: 'bg-neutral-400',
     },
     {
@@ -42,7 +42,7 @@ export function DashboardStats({
       count: stats.todo,
       icon: Clock,
       colorClass: 'text-yellow-400',
-      activeBorder: 'border-yellow-400 ring-1 ring-yellow-400/30',
+      activeBorder: 'border-yellow-400 ring-1 ring-yellow-400/30 bg-yellow-400/10',
       accentDot: 'bg-yellow-400',
     },
     {
@@ -51,7 +51,7 @@ export function DashboardStats({
       count: stats.doing,
       icon: PlayCircle,
       colorClass: 'text-blue-400',
-      activeBorder: 'border-blue-400 ring-1 ring-blue-400/30',
+      activeBorder: 'border-blue-400 ring-1 ring-blue-400/30 bg-blue-400/10',
       accentDot: 'bg-blue-400',
     },
     {
@@ -60,7 +60,7 @@ export function DashboardStats({
       count: stats.done,
       icon: CheckCircle2,
       colorClass: 'text-green-400',
-      activeBorder: 'border-green-400 ring-1 ring-green-400/30',
+      activeBorder: 'border-green-400 ring-1 ring-green-400/30 bg-green-400/10',
       accentDot: 'bg-green-400',
     },
   ];
@@ -82,16 +82,16 @@ export function DashboardStats({
                 onSelectStatus(card.id);
               }
             }}
-            className={`group flex items-center justify-between rounded-lg border bg-[#262626] px-3 py-1.5 text-left transition-all duration-150 hover:bg-[#2B2B2B] ${
+            className={`group flex items-center justify-between rounded-lg border px-3 py-1.5 text-left transition-all duration-150 hover:bg-[#252525] ${
               isActive
-                ? `${card.activeBorder} bg-[#2F2F2F]`
-                : 'border-neutral-800 hover:border-neutral-700'
+                ? `${card.activeBorder} shadow-sm`
+                : 'border-neutral-800 bg-[#1A1A1A] hover:border-neutral-700'
             }`}
           >
             <div className="flex items-center gap-2 min-w-0">
               <Icon className={`h-3.5 w-3.5 shrink-0 ${card.colorClass}`} />
               <div className="min-w-0">
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-neutral-400 block truncate">
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-neutral-300 block truncate">
                   {card.label}
                 </span>
                 {card.subtitle && (

@@ -145,64 +145,64 @@ export function MovieCard({
   return (
     <div
       onClick={() => onOpenDetails(movie)}
-      className="group relative flex flex-col overflow-hidden rounded-xl border border-neutral-800 bg-[#262626] transition-all duration-200 hover:-translate-y-0.5 hover:border-neutral-700 hover:shadow-lg cursor-pointer"
+      className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-neutral-800 bg-[#262626] p-3.5 sm:p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-neutral-700 hover:shadow-xl hover:shadow-black/50 cursor-pointer"
     >
-      {/* Poster Image */}
-      <div className="relative aspect-[2/3] w-full overflow-hidden bg-neutral-900">
-        {posterUrl && !imageError ? (
-          <img
-            src={posterUrl}
-            alt={movie.title}
-            loading="lazy"
-            onError={() => setImageError(true)}
-            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-          />
-        ) : (
-          <div className="flex h-full w-full flex-col items-center justify-center p-4 text-neutral-600">
-            <Film className="h-12 w-12 stroke-[1.5] text-neutral-500" />
-            <span className="mt-2 text-center text-xs font-medium text-neutral-400">
-              No Poster Available
-            </span>
+      <div>
+        {/* Banner Image - aspect-video matching reference layout */}
+        <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-neutral-900 shrink-0">
+          {posterUrl && !imageError ? (
+            <img
+              src={posterUrl}
+              alt={movie.title}
+              loading="lazy"
+              onError={() => setImageError(true)}
+              className="h-full w-full object-cover object-center transition-transform duration-300 group-hover:scale-105"
+            />
+          ) : (
+            <div className="flex h-full w-full flex-col items-center justify-center p-4 text-neutral-600">
+              <Film className="h-10 w-10 stroke-[1.5] text-neutral-500" />
+              <span className="mt-1.5 text-center text-[11px] font-medium text-neutral-400">
+                No Poster Available
+              </span>
+            </div>
+          )}
+
+          {/* Rating Badge Top Left */}
+          {movie.personalRating && (
+            <div className="absolute left-2.5 top-2.5 flex items-center gap-1 rounded-md bg-black/80 px-2 py-0.5 text-xs font-semibold text-amber-400 backdrop-blur-sm border border-white/10">
+              <Star className="h-3 w-3 fill-amber-400" />
+              <span>{movie.personalRating}/10</span>
+            </div>
+          )}
+
+          {/* IMDb external link top right */}
+          <a
+            href={movie.imdbUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            title="Open on IMDb"
+            className="absolute right-2.5 top-2.5 flex h-7 w-7 items-center justify-center rounded-md bg-black/80 text-neutral-300 backdrop-blur-sm border border-white/10 transition-colors hover:text-white hover:bg-neutral-800"
+          >
+            <ExternalLink className="h-3.5 w-3.5" />
+          </a>
+
+          {/* Status indicator pill bottom left of poster */}
+          <div className="absolute bottom-2.5 left-2.5">
+            <StatusBadge status={movie.status as WatchStatus} size="sm" />
           </div>
-        )}
-
-        {/* Rating Badge Top Left */}
-        {movie.personalRating && (
-          <div className="absolute left-2.5 top-2.5 flex items-center gap-1 rounded-md bg-black/80 px-2 py-0.5 text-xs font-semibold text-amber-400 backdrop-blur-sm border border-white/10">
-            <Star className="h-3 w-3 fill-amber-400" />
-            <span>{movie.personalRating}/10</span>
-          </div>
-        )}
-
-        {/* IMDb external link top right */}
-        <a
-          href={movie.imdbUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={(e) => e.stopPropagation()}
-          title="Open on IMDb"
-          className="absolute right-2.5 top-2.5 flex h-7 w-7 items-center justify-center rounded-md bg-black/80 text-neutral-300 backdrop-blur-sm border border-white/10 transition-colors hover:text-white hover:bg-neutral-800"
-        >
-          <ExternalLink className="h-3.5 w-3.5" />
-        </a>
-
-        {/* Status indicator pill bottom left of poster */}
-        <div className="absolute bottom-2.5 left-2.5">
-          <StatusBadge status={movie.status as WatchStatus} size="sm" />
         </div>
-      </div>
 
-      {/* Card Content */}
-      <div className="flex flex-1 flex-col justify-between p-3.5">
-        <div>
-          <div className="flex items-start justify-between gap-1">
+        {/* Card Content Header */}
+        <div className="pt-3">
+          <div className="flex items-start justify-between gap-1.5">
             <h3
-              className="line-clamp-1 text-sm font-semibold text-[#ECECEC] group-hover:text-white"
+              className="line-clamp-2 text-sm font-bold text-white group-hover:text-white leading-snug"
               title={movie.title}
             >
               {movie.title}
             </h3>
-            <div className="flex items-center gap-1.5 shrink-0">
+            <div className="flex items-center gap-1.5 shrink-0 pt-0.5">
               {movie.mediaType === 'SERIES' && (
                 <span className="rounded bg-purple-500/20 px-1.5 py-0.5 text-[10px] font-semibold text-purple-300 border border-purple-500/30">
                   Series • Ep {movie.currentEpisode || 1}

@@ -12,7 +12,6 @@ import {
   Tag,
 } from 'lucide-react';
 import type { Movie, WatchStatus } from '@/db/schema';
-import { DashboardStats } from '@/components/dashboard-stats';
 import { SearchFilters } from '@/components/search-filters';
 import { MovieCard } from '@/components/movie-card';
 import { MovieDetailsDialog } from '@/components/movie-details-dialog';
@@ -296,20 +295,12 @@ export default function HomePage() {
       </header>
 
       {/* Main Container */}
-      <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-3.5 sm:px-6 sm:py-4 space-y-2.5">
-        {/* 1. Dashboard Summary Counters */}
-        <section aria-label="Watchlist statistics">
-          <DashboardStats
-            stats={stats}
-            activeStatus={statusFilter}
-            onSelectStatus={(st) => setStatusFilter(st)}
-            isLoading={isLoading && movies.length === 0}
-          />
-        </section>
-
-        {/* 2. Search, Filters, and Sorting Bar */}
+      <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-3.5 sm:px-6 sm:py-4 space-y-4">
+        {/* Unified Dashboard Stats + Search & Filters Bar (Gộp 2 phần thành 1) */}
         <section aria-label="Search and filter movies">
           <SearchFilters
+            stats={stats}
+            isLoadingStats={isLoading && movies.length === 0}
             search={search}
             onSearchChange={setSearch}
             status={statusFilter}
@@ -328,21 +319,28 @@ export default function HomePage() {
           />
         </section>
 
-        {/* 3. Responsive Movie Collection Grid */}
-        <section aria-label="Movie collection" className="pt-2">
+        {/* Responsive Movie Collection Grid (Kích thước & layout giống ảnh Udemy reference) */}
+        <section aria-label="Movie collection" className="pt-1">
           {isLoading && movies.length === 0 ? (
             /* Skeleton Loading Grid */
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 sm:gap-4">
-              {[...Array(10)].map((_, i) => (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6">
+              {[...Array(8)].map((_, i) => (
                 <div
                   key={i}
-                  className="aspect-[2/3] animate-pulse rounded-xl bg-[#262626] border border-neutral-800"
-                />
+                  className="flex flex-col justify-between h-[360px] animate-pulse rounded-2xl bg-[#262626] border border-neutral-800 p-3.5"
+                >
+                  <div className="aspect-video w-full rounded-xl bg-neutral-800/80" />
+                  <div className="space-y-2 pt-3">
+                    <div className="h-4 w-3/4 rounded bg-neutral-800" />
+                    <div className="h-3 w-1/2 rounded bg-neutral-800" />
+                  </div>
+                  <div className="h-8 w-full rounded-lg bg-neutral-800/60 mt-4" />
+                </div>
               ))}
             </div>
           ) : movies.length > 0 ? (
             /* Movie Cards Grid */
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 sm:gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6">
               {movies.map((movie) => (
                 <MovieCard
                   key={movie.id}

@@ -1,8 +1,17 @@
 import React from 'react';
-import { Search, X, SlidersHorizontal, ArrowUpDown, Bookmark } from 'lucide-react';
-import type { WatchStatus } from '@/db/schema';
+import { Search, X, ArrowUpDown, Bookmark } from 'lucide-react';
+import { DashboardStats } from './dashboard-stats';
 
 interface SearchFiltersProps {
+  stats?: {
+    total: number;
+    totalMovies?: number;
+    totalSeries?: number;
+    todo: number;
+    doing: number;
+    done: number;
+  };
+  isLoadingStats?: boolean;
   search: string;
   onSearchChange: (value: string) => void;
   status: string;
@@ -11,8 +20,8 @@ interface SearchFiltersProps {
   onMediaTypeChange: (type: string) => void;
   genre: string;
   onGenreChange: (genre: string) => void;
-  year: string;
-  onYearChange: (year: string) => void;
+  year?: string;
+  onYearChange?: (year: string) => void;
   sortBy: string;
   onSortByChange: (sortBy: string) => void;
   availableGenres: { name: string; count: number }[];
@@ -21,6 +30,8 @@ interface SearchFiltersProps {
 }
 
 export function SearchFilters({
+  stats,
+  isLoadingStats = false,
   search,
   onSearchChange,
   status,
@@ -29,8 +40,6 @@ export function SearchFilters({
   onMediaTypeChange,
   genre,
   onGenreChange,
-  year,
-  onYearChange,
   sortBy,
   onSortByChange,
   availableGenres,
@@ -57,8 +66,18 @@ export function SearchFilters({
 
   return (
     <div className="flex flex-col gap-2 rounded-xl border border-neutral-800 bg-[#262626] p-2.5 sm:p-3">
-      {/* Main Filter Row: Search Input + Media Type Filter + Sort By Dropdown */}
-      <div className="flex flex-wrap items-center gap-2">
+      {/* Top Part: Status & Total Stats (Gộp phần 1 vào đây) */}
+      {stats && (
+        <DashboardStats
+          stats={stats}
+          activeStatus={status}
+          onSelectStatus={onStatusChange}
+          isLoading={isLoadingStats}
+        />
+      )}
+
+      {/* Middle Part: Search Input + Media Type Filter + Sort By Dropdown */}
+      <div className={`flex flex-wrap items-center gap-2 ${stats ? 'pt-2 border-t border-neutral-800/80' : ''}`}>
         {/* Search Input */}
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-neutral-400" />
@@ -144,9 +163,9 @@ export function SearchFilters({
         </span>
       </div>
 
-      {/* Genre Filter Tabs (Only active genres with count > 0) */}
+      {/* Bottom Part: Genre Filter Tabs (Only active genres with count > 0) */}
       {activeGenres.length > 0 && (
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 scrollbar-none border-t border-neutral-800/60 pt-2 text-xs">
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 scrollbar-none border-t border-neutral-800/80 pt-2 text-xs">
           <span className="text-xs font-semibold text-purple-300 flex items-center gap-1 shrink-0 mr-1">
             <Bookmark className="w-3 h-3 text-purple-400" />
             Genre:
