@@ -296,7 +296,7 @@ export default function HomePage() {
       </header>
 
       {/* Main Container */}
-      <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 sm:px-6 sm:py-8 space-y-6">
+      <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-3.5 sm:px-6 sm:py-4 space-y-2.5">
         {/* 1. Dashboard Summary Counters */}
         <section aria-label="Watchlist statistics">
           <DashboardStats

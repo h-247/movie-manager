@@ -517,7 +517,7 @@ export function MovieDetailsDialog({
                           <span className="text-neutral-400 text-[11px]">
                             Season <strong className="text-white">{curSeason}</strong>{movie.totalSeasons ? `/${movie.totalSeasons}` : ''}
                             {' • '}
-                            Episode <strong className="text-white">{curEpisode}</strong>{epsPerSeason ? `/${epsPerSeason}` : ''}
+                            Current Episode: <strong className="text-white font-bold">{curEpisode}</strong>{epsPerSeason ? `/${epsPerSeason}` : ''}
                           </span>
                         </div>
 

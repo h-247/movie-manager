@@ -66,7 +66,7 @@ export function DashboardStats({
   ];
 
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
       {cards.map((card) => {
         const Icon = card.icon;
         const isActive = activeStatus === card.id;
@@ -82,37 +82,35 @@ export function DashboardStats({
                 onSelectStatus(card.id);
               }
             }}
-            className={`group flex flex-col justify-between rounded-xl border bg-[#262626] p-4 text-left transition-all duration-150 hover:bg-[#2B2B2B] ${
+            className={`group flex items-center justify-between rounded-lg border bg-[#262626] px-3 py-1.5 text-left transition-all duration-150 hover:bg-[#2B2B2B] ${
               isActive
-                ? `${card.activeBorder} shadow-sm`
+                ? `${card.activeBorder} bg-[#2F2F2F]`
                 : 'border-neutral-800 hover:border-neutral-700'
             }`}
           >
-            <div className="flex items-center justify-between text-neutral-400">
-              <span className="text-xs font-medium uppercase tracking-wider text-neutral-400">
-                {card.label}
-              </span>
-              <Icon
-                className={`h-4 w-4 transition-transform group-hover:scale-110 ${card.colorClass}`}
-              />
+            <div className="flex items-center gap-2 min-w-0">
+              <Icon className={`h-3.5 w-3.5 shrink-0 ${card.colorClass}`} />
+              <div className="min-w-0">
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-neutral-400 block truncate">
+                  {card.label}
+                </span>
+                {card.subtitle && (
+                  <span className="text-[10px] text-neutral-500 block truncate">
+                    {card.subtitle}
+                  </span>
+                )}
+              </div>
             </div>
-            <div className="mt-3 flex items-baseline justify-between">
-              <span className="text-2xl font-bold tracking-tight text-[#ECECEC] sm:text-3xl">
+            <div className="flex items-center gap-1.5 shrink-0 pl-1.5">
+              <span className="text-sm sm:text-base font-bold text-white">
                 {isLoading ? (
-                  <span className="inline-block h-8 w-12 animate-pulse rounded bg-neutral-800" />
+                  <span className="inline-block h-4 w-6 animate-pulse rounded bg-neutral-800" />
                 ) : (
                   card.count
                 )}
               </span>
-              <span
-                className={`h-2 w-2 rounded-full ${card.accentDot} opacity-80`}
-              />
+              <span className={`h-1.5 w-1.5 rounded-full ${card.accentDot}`} />
             </div>
-            {card.subtitle && (
-              <span className="mt-1 text-[11px] font-medium text-neutral-400">
-                {card.subtitle}
-              </span>
-            )}
           </button>
         );
       })}

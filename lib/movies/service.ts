@@ -459,15 +459,6 @@ export class MovieService {
       }
     }
 
-    try {
-      const repoG = await this.db.select().from(movieGenres).all();
-      for (const rg of repoG) {
-        if (genreCountMap[rg.name] === undefined) {
-          genreCountMap[rg.name] = 0;
-        }
-      }
-    } catch {}
-
     const genreList = Object.entries(genreCountMap)
       .map(([name, count]) => ({ name, count }))
       .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
