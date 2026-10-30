@@ -9,6 +9,7 @@ import {
   AlertCircle,
   CheckCircle2,
   SlidersHorizontal,
+  Tag,
 } from 'lucide-react';
 import type { Movie, WatchStatus } from '@/db/schema';
 import { DashboardStats } from '@/components/dashboard-stats';
@@ -18,6 +19,7 @@ import { MovieDetailsDialog } from '@/components/movie-details-dialog';
 import { ImportDialog } from '@/components/import-dialog';
 import { DeleteConfirmDialog } from '@/components/delete-confirm-dialog';
 import { AboutDialog } from '@/components/about-dialog';
+import { ManageGenresModal } from '@/components/manage-genres-modal';
 
 export default function HomePage() {
   const [movies, setMovies] = useState<Movie[]>([]);
@@ -47,6 +49,7 @@ export default function HomePage() {
   // Modals state
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [isAboutOpen, setIsAboutOpen] = useState(false);
+  const [isManageGenresOpen, setIsManageGenresOpen] = useState(false);
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
   const [movieToDelete, setMovieToDelete] = useState<Movie | null>(null);
 
@@ -171,7 +174,9 @@ export default function HomePage() {
       setMovies((prev) =>
         prev.map((m) => (m.id === movieId ? data.movie : m)),
       );
-      setSelectedMovie(data.movie);
+      if (selectedMovie && selectedMovie.id === movieId) {
+        setSelectedMovie(data.movie);
+      }
       fetchStats();
       showToast('success', 'Movie updated successfully.');
     } catch (err: any) {
@@ -264,6 +269,17 @@ export default function HomePage() {
               className="flex h-9 w-9 items-center justify-center rounded-xl border border-neutral-800 bg-[#262626] text-neutral-400 hover:border-neutral-700 hover:text-white transition-colors"
             >
               <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+            </button>
+
+            {/* Genres of Movies button like english-grammar-quiz */}
+            <button
+              type="button"
+              onClick={() => setIsManageGenresOpen(true)}
+              title="CRUD Genres of Movies (Add, Edit, Delete genres in repo)"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-[#222222] text-purple-300 hover:text-white hover:bg-[#2c2c2c] border border-purple-500/30 transition-all cursor-pointer shrink-0"
+            >
+              <Tag className="h-4 w-4 text-purple-400" />
+              <span className="hidden sm:inline">Genres of Movies</span>
             </button>
 
             {/* Prominent Import Title Button */}
@@ -428,6 +444,15 @@ export default function HomePage() {
       <AboutDialog
         isOpen={isAboutOpen}
         onClose={() => setIsAboutOpen(false)}
+      />
+
+      <ManageGenresModal
+        isOpen={isManageGenresOpen}
+        onClose={() => setIsManageGenresOpen(false)}
+        onGenresChange={() => {
+          fetchStats();
+          fetchMovies();
+        }}
       />
     </div>
   );

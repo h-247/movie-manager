@@ -1,6 +1,6 @@
 import { eq, and, or, like, desc, asc, sql } from 'drizzle-orm';
 import { getDb } from '@/db';
-import { movies, type Movie, type WatchStatus, type MediaType } from '@/db/schema';
+import { movies, movieGenres, type Movie, type WatchStatus, type MediaType } from '@/db/schema';
 import { fetchMovieMetadataByImdbId, checkImdbTitleType } from '@/lib/tmdb';
 
 export interface GetMoviesParams {
@@ -458,6 +458,15 @@ export class MovieService {
         }
       }
     }
+
+    try {
+      const repoG = await this.db.select().from(movieGenres).all();
+      for (const rg of repoG) {
+        if (genreCountMap[rg.name] === undefined) {
+          genreCountMap[rg.name] = 0;
+        }
+      }
+    } catch {}
 
     const genreList = Object.entries(genreCountMap)
       .map(([name, count]) => ({ name, count }))

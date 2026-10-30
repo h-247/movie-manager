@@ -56,3 +56,19 @@ export const movies = sqliteTable(
 
 export type Movie = typeof movies.$inferSelect;
 export type NewMovie = typeof movies.$inferInsert;
+
+export const movieGenres = sqliteTable(
+  'movie_genres',
+  {
+    id: text('id').primaryKey(),
+    name: text('name').notNull().unique(),
+    category: text('category').notNull().default('genre'),
+    createdAt: text('created_at').notNull(),
+  },
+  (table) => [
+    uniqueIndex('movie_genres_name_idx').on(table.name),
+  ],
+);
+
+export type MovieGenre = typeof movieGenres.$inferSelect;
+export type NewMovieGenre = typeof movieGenres.$inferInsert;

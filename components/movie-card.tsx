@@ -216,17 +216,11 @@ export function MovieCard({
             </div>
           </div>
 
-          {/* Production Country */}
+          {/* Production Country - Only name of country */}
           {countriesList.length > 0 && (
-            <div className="mt-1.5 flex items-center gap-1.5">
-              <span
-                className="inline-flex items-center gap-1.5 rounded-md bg-cyan-950/50 px-2 py-0.5 text-[11px] font-medium text-cyan-200 border border-cyan-700/50"
-                title={`Production Country: ${countriesList.join(', ')}`}
-              >
-                <Globe className="h-3 w-3 text-cyan-400 shrink-0" />
-                <span className="font-bold text-cyan-400 text-[10px] uppercase tracking-wider">Country:</span>
-                <span className="font-medium text-cyan-100">{countriesList.join(', ')}</span>
-              </span>
+            <div className="mt-1 flex items-center gap-1 text-[11px] text-neutral-300">
+              <Globe className="h-3 w-3 text-cyan-400 shrink-0" />
+              <span className="truncate font-medium">{countriesList.join(', ')}</span>
             </div>
           )}
 
@@ -244,8 +238,13 @@ export function MovieCard({
             if (isEditingProgress) {
               return (
                 <div
-                  className="mt-2.5 rounded-lg border border-purple-500/40 bg-purple-950/40 p-2.5 text-xs space-y-2"
-                  onClick={(e) => e.stopPropagation()}
+                  className="mt-2.5 rounded-lg border border-purple-500/40 bg-purple-950/40 p-2.5 text-xs space-y-2 cursor-default"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                  }}
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onMouseUp={(e) => e.stopPropagation()}
+                  onPointerDown={(e) => e.stopPropagation()}
                 >
                   <div className="flex items-center justify-between text-[11px]">
                     <span className="font-semibold text-purple-200">Edit Series Progress</span>
@@ -304,8 +303,13 @@ export function MovieCard({
 
             return (
               <div
-                className="mt-2.5 rounded-lg border border-purple-500/20 bg-purple-950/20 p-2 text-xs"
-                onClick={(e) => e.stopPropagation()}
+                className="mt-2.5 rounded-lg border border-purple-500/20 bg-purple-950/20 p-2 text-xs cursor-default"
+                onClick={(e) => {
+                  e.stopPropagation();
+                }}
+                onMouseDown={(e) => e.stopPropagation()}
+                onMouseUp={(e) => e.stopPropagation()}
+                onPointerDown={(e) => e.stopPropagation()}
               >
                 <div className="flex items-center justify-between text-[11px]">
                   <div className="flex items-center gap-1.5">

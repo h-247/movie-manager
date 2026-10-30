@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, X, SlidersHorizontal, ArrowUpDown } from 'lucide-react';
+import { Search, X, SlidersHorizontal, ArrowUpDown, Bookmark } from 'lucide-react';
 import type { WatchStatus } from '@/db/schema';
 
 interface SearchFiltersProps {
@@ -240,6 +240,59 @@ export function SearchFilters({
           </span>
         </div>
       </div>
+
+      {/* Genre Filter Tabs (matching english-grammar-quiz) */}
+      {availableGenres.length > 0 && (
+        <div className="flex items-center gap-2 overflow-x-auto pb-0.5 scrollbar-none border-t border-neutral-800/80 pt-2.5">
+          <span className="text-xs font-semibold text-purple-300 flex items-center gap-1 shrink-0 min-w-[52px]">
+            <Bookmark className="w-3.5 h-3.5 text-purple-400" />
+            Genre:
+          </span>
+          <button
+            type="button"
+            onClick={() => onGenreChange('')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 ${
+              !genre
+                ? 'bg-purple-600 text-white shadow-sm'
+                : 'bg-[#1A1A1A] text-purple-300 hover:text-white border border-purple-500/25 hover:border-purple-500/50'
+            }`}
+          >
+            <span>All Genres</span>
+            <span
+              className={`px-1.5 py-0.2 rounded-full text-[10px] ${
+                !genre ? 'bg-purple-700 text-white' : 'bg-[#2a2a2a] text-purple-300'
+              }`}
+            >
+              {availableGenres.reduce((acc, curr) => acc + curr.count, 0)}
+            </span>
+          </button>
+
+          {availableGenres.map((g) => {
+            const isSelected = genre.toLowerCase() === g.name.toLowerCase();
+            return (
+              <button
+                key={g.name}
+                type="button"
+                onClick={() => onGenreChange(isSelected ? '' : g.name)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 ${
+                  isSelected
+                    ? 'bg-purple-600 text-white shadow-sm'
+                    : 'bg-[#1A1A1A] text-purple-300 hover:text-white border border-purple-500/25 hover:border-purple-500/50'
+                }`}
+              >
+                <span>{g.name}</span>
+                <span
+                  className={`px-1.5 py-0.2 rounded-full text-[10px] ${
+                    isSelected ? 'bg-purple-700 text-white' : 'bg-[#2a2a2a] text-purple-300'
+                  }`}
+                >
+                  {g.count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
