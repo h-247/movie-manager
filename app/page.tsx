@@ -46,8 +46,8 @@ export default function HomePage() {
   const [yearFilter, setYearFilter] = useState('');
   const [sortBy, setSortBy] = useState('added_desc');
 
-  // Sidebar state
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  // Sidebar state (Default sidebar closed as requested)
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   // Modals state
   const [isImportOpen, setIsImportOpen] = useState(false);
@@ -55,6 +55,40 @@ export default function HomePage() {
   const [isManageGenresOpen, setIsManageGenresOpen] = useState(false);
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
   const [movieToDelete, setMovieToDelete] = useState<Movie | null>(null);
+
+  // Global shortcut Ctrl+Shift to open Import Title modal
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (
+        target &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
+        const key = e.key.toLowerCase();
+        if (
+          e.key === 'Shift' ||
+          e.key === 'Control' ||
+          e.code.startsWith('Shift') ||
+          e.code.startsWith('Control') ||
+          key === 'i' ||
+          key === 'o' ||
+          key === 'm'
+        ) {
+          e.preventDefault();
+          setIsImportOpen(true);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const showToast = (type: 'success' | 'error', text: string) => {
     setToastMessage({ type, text });
@@ -275,19 +309,22 @@ export default function HomePage() {
         <main className="flex-1 px-4 py-4 sm:px-6 sm:py-6">
           <section aria-label="Movie collection">
             {isLoading && movies.length === 0 ? (
-              /* Skeleton Loading Grid */
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 sm:gap-6">
+              /* Skeleton Loading Grid without photo */
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
                 {[...Array(8)].map((_, i) => (
                   <div
                     key={i}
-                    className="flex flex-col justify-between h-[360px] animate-pulse rounded-2xl bg-[#262626] border border-neutral-800 p-3.5"
+                    className="flex flex-col justify-between h-[230px] animate-pulse rounded-2xl bg-[#262626] border border-neutral-800 p-4 space-y-3"
                   >
-                    <div className="aspect-video w-full rounded-xl bg-neutral-800/80" />
-                    <div className="space-y-2 pt-3">
-                      <div className="h-4 w-3/4 rounded bg-neutral-800" />
-                      <div className="h-3 w-1/2 rounded bg-neutral-800" />
+                    <div className="flex items-center justify-between">
+                      <div className="h-5 w-20 rounded bg-neutral-800" />
+                      <div className="h-5 w-12 rounded bg-neutral-800" />
                     </div>
-                    <div className="h-8 w-full rounded-lg bg-neutral-800/60 mt-4" />
+                    <div className="space-y-2 pt-1">
+                      <div className="h-5 w-3/4 rounded bg-neutral-800" />
+                      <div className="h-3 w-1/3 rounded bg-neutral-800" />
+                    </div>
+                    <div className="h-7 w-full rounded-lg bg-neutral-800/60 mt-auto" />
                   </div>
                 ))}
               </div>
@@ -349,16 +386,6 @@ export default function HomePage() {
           )}
         </section>
       </main>
-
-      {/* Footer */}
-      <footer className="mt-auto border-t border-neutral-800/80 bg-[#1C1C1C] py-6 text-center text-xs text-neutral-400">
-        <div className="mx-auto flex max-w-7xl flex-col sm:flex-row items-center justify-between gap-3 px-4 sm:px-6">
-          <p>© {new Date().getFullYear()} Movie Watchlist Manager. All rights reserved.</p>
-          <p className="text-[11px] text-neutral-400">
-            This product uses the TMDB API but is not endorsed or certified by TMDB.
-          </p>
-        </div>
-      </footer>
       </div>
 
       {/* Dialogs */}

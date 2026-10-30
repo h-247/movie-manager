@@ -145,59 +145,49 @@ export function MovieCard({
   return (
     <div
       onClick={() => onOpenDetails(movie)}
-      className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-neutral-800 bg-[#262626] p-3.5 sm:p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-neutral-700 hover:shadow-xl hover:shadow-black/50 cursor-pointer"
+      className="group relative flex flex-col justify-between rounded-2xl border border-neutral-800 bg-[#262626] p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-neutral-700 hover:shadow-xl hover:shadow-black/50 cursor-pointer"
     >
       <div>
-        {/* Banner Image - aspect-video matching reference layout */}
-        <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-neutral-900 shrink-0">
-          {posterUrl && !imageError ? (
-            <img
-              src={posterUrl}
-              alt={movie.title}
-              loading="lazy"
-              onError={() => setImageError(true)}
-              className="h-full w-full object-cover object-center transition-transform duration-300 group-hover:scale-105"
-            />
-          ) : (
-            <div className="flex h-full w-full flex-col items-center justify-center p-4 text-neutral-600">
-              <Film className="h-10 w-10 stroke-[1.5] text-neutral-500" />
-              <span className="mt-1.5 text-center text-[11px] font-medium text-neutral-400">
-                No Poster Available
-              </span>
-            </div>
-          )}
-
-          {/* Rating Badge Top Left */}
-          {movie.personalRating && (
-            <div className="absolute left-2.5 top-2.5 flex items-center gap-1 rounded-md bg-black/80 px-2 py-0.5 text-xs font-semibold text-amber-400 backdrop-blur-sm border border-white/10">
-              <Star className="h-3 w-3 fill-amber-400" />
-              <span>{movie.personalRating}/10</span>
-            </div>
-          )}
-
-          {/* IMDb external link top right */}
-          <a
-            href={movie.imdbUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={(e) => e.stopPropagation()}
-            title="Open on IMDb"
-            className="absolute right-2.5 top-2.5 flex h-7 w-7 items-center justify-center rounded-md bg-black/80 text-neutral-300 backdrop-blur-sm border border-white/10 transition-colors hover:text-white hover:bg-neutral-800"
-          >
-            <ExternalLink className="h-3.5 w-3.5" />
-          </a>
-
-          {/* Status indicator pill bottom left of poster */}
-          <div className="absolute bottom-2.5 left-2.5">
+        {/* Card Header Row: Status, Type, Rating, IMDb Link */}
+        <div className="flex items-center justify-between gap-2 pb-2.5 mb-2.5 border-b border-neutral-800/80">
+          <div className="flex items-center gap-1.5">
             <StatusBadge status={movie.status as WatchStatus} size="sm" />
+            <span
+              className={`rounded px-1.5 py-0.5 text-[10px] font-semibold border ${
+                movie.mediaType === 'SERIES'
+                  ? 'bg-purple-500/20 text-purple-300 border-purple-500/30'
+                  : 'bg-blue-500/20 text-blue-300 border-blue-500/30'
+              }`}
+            >
+              {movie.mediaType === 'SERIES' ? 'Series' : 'Movie'}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            {movie.personalRating && (
+              <div className="flex items-center gap-1 rounded-md bg-[#1A1A1A] px-1.5 py-0.5 text-xs font-semibold text-amber-400 border border-neutral-800">
+                <Star className="h-3 w-3 fill-amber-400" />
+                <span>{movie.personalRating}/10</span>
+              </div>
+            )}
+            <a
+              href={movie.imdbUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              title="Open on IMDb"
+              className="flex h-6 w-6 items-center justify-center rounded-md bg-[#1A1A1A] text-neutral-400 hover:text-white border border-neutral-800 transition-colors"
+            >
+              <ExternalLink className="h-3 w-3" />
+            </a>
           </div>
         </div>
 
         {/* Card Content Header */}
-        <div className="pt-3">
+        <div>
           <div className="flex items-start justify-between gap-1.5">
             <h3
-              className="line-clamp-2 text-sm font-bold text-white group-hover:text-white leading-snug"
+              className="text-base font-bold text-white group-hover:text-purple-300 leading-snug transition-colors line-clamp-2"
               title={movie.title}
             >
               {movie.title}
@@ -305,7 +295,7 @@ export function MovieCard({
 
             return (
               <div
-                className="mt-2.5 rounded-lg border border-purple-500/20 bg-purple-950/20 p-2 text-xs cursor-default"
+                className="mt-2.5 flex items-center justify-between rounded-lg border border-purple-500/25 bg-purple-950/25 px-2.5 py-1.5 text-xs cursor-default"
                 onClick={(e) => {
                   e.stopPropagation();
                 }}
@@ -313,15 +303,16 @@ export function MovieCard({
                 onMouseUp={(e) => e.stopPropagation()}
                 onPointerDown={(e) => e.stopPropagation()}
               >
-                <div className="flex items-center justify-between text-[11px]">
-                  <div className="flex items-center gap-1.5">
-                    <span className="font-semibold text-purple-300">Series Progress</span>
-                    {progressPercent !== null && (
-                      <span className="rounded bg-purple-500/30 px-1.5 py-0.2 text-[10px] font-semibold text-purple-200">
-                        {progressPercent}%
-                      </span>
-                    )}
-                  </div>
+                {/* 1. Current episode */}
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[11px] font-semibold text-purple-300">Series Progress:</span>
+                  <span className="rounded bg-purple-500/30 px-2 py-0.5 text-xs font-bold text-purple-200 border border-purple-500/40 tracking-wide">
+                    S{curSeason} E{curEpisode}
+                  </span>
+                </div>
+
+                {/* 2. Edit button & 3. Next episode button */}
+                <div className="flex items-center gap-1.5">
                   <button
                     type="button"
                     onClick={(e) => {
@@ -329,115 +320,38 @@ export function MovieCard({
                       setIsEditingProgress(true);
                     }}
                     title="Edit Series Progress"
-                    className="flex items-center gap-1 text-[10px] text-purple-300/80 hover:text-white bg-purple-900/40 hover:bg-purple-800/60 px-1.5 py-0.5 rounded transition-colors"
+                    className="flex items-center gap-1 text-[11px] font-medium text-purple-300 hover:text-white bg-purple-900/40 hover:bg-purple-800/60 px-2 py-1 rounded transition-colors"
                   >
-                    <Edit2 className="h-2.5 w-2.5" />
+                    <Edit2 className="h-3 w-3" />
                     <span>Edit</span>
                   </button>
-                </div>
 
-                {/* Show Series Progress in S1 E1 format */}
-                <div className="mt-1 flex items-center justify-between text-[11px] text-neutral-300">
-                  <span className="text-neutral-400">
-                    Season <strong className="text-white">{curSeason}</strong>{movie.totalSeasons ? `/${movie.totalSeasons}` : ''}
-                  </span>
-                  <span className="rounded bg-purple-500/25 px-2 py-0.5 text-[11px] font-bold text-purple-200 border border-purple-500/40 tracking-wide">
-                    S{curSeason} E{curEpisode}
-                  </span>
-                </div>
-
-                {progressPercent !== null && (
-                  <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-neutral-800">
-                    <div
-                      className="h-full rounded-full bg-purple-500 transition-all duration-300"
-                      style={{ width: `${progressPercent}%` }}
-                    />
-                  </div>
-                )}
-
-                {/* Quick Steppers: Season & Episode */}
-                <div className="mt-2 flex items-center justify-between gap-1 pt-1.5 border-t border-purple-500/10 text-[11px]">
-                  {/* Season Stepper */}
-                  <div className="flex items-center gap-1">
-                    <span className="text-neutral-400 text-[10px]">S:</span>
-                    <button
-                      type="button"
-                      disabled={curSeason <= 1 || isUpdatingProgress}
-                      onClick={(e) => handleStepSeason(e, -1)}
-                      title="Previous Season"
-                      className="flex h-5 w-5 items-center justify-center rounded bg-[#1A1A1A] border border-neutral-700 text-neutral-300 hover:text-white hover:bg-neutral-800 disabled:opacity-40 transition-colors"
-                    >
-                      -
-                    </button>
-                    <span className="min-w-[18px] text-center font-bold text-white text-[11px]">
-                      {curSeason}
-                      {movie.totalSeasons ? <span className="text-[10px] text-neutral-400 font-normal">/{movie.totalSeasons}</span> : null}
-                    </span>
-                    <button
-                      type="button"
-                      disabled={(movie.totalSeasons ? curSeason >= movie.totalSeasons : false) || isUpdatingProgress}
-                      onClick={(e) => handleStepSeason(e, 1)}
-                      title="Next Season"
-                      className="flex h-5 w-5 items-center justify-center rounded bg-[#1A1A1A] border border-neutral-700 text-neutral-300 hover:text-white hover:bg-neutral-800 disabled:opacity-40 transition-colors"
-                    >
-                      +
-                    </button>
-                  </div>
-
-                  {/* Episode Stepper */}
-                  <div className="flex items-center gap-1">
-                    <span className="text-neutral-400 text-[10px]">Ep:</span>
-                    <button
-                      type="button"
-                      disabled={(curSeason <= 1 && curEpisode <= 1) || isUpdatingProgress}
-                      onClick={(e) => handleStepEpisode(e, -1)}
-                      title="Previous Episode"
-                      className="flex h-5 w-5 items-center justify-center rounded bg-[#1A1A1A] border border-neutral-700 text-neutral-300 hover:text-white hover:bg-neutral-800 disabled:opacity-40 transition-colors"
-                    >
-                      -
-                    </button>
-                    <span className="min-w-[18px] text-center font-bold text-white text-[11px]">
-                      {curEpisode}
-                      {epsPerSeason ? <span className="text-[10px] text-neutral-400 font-normal">/{epsPerSeason}</span> : null}
-                    </span>
-                    <button
-                      type="button"
-                      disabled={isUpdatingProgress}
-                      onClick={(e) => handleStepEpisode(e, 1)}
-                      title="Next Episode"
-                      className="flex h-5 items-center justify-center rounded bg-purple-600 px-1.5 text-[10px] font-bold text-white hover:bg-purple-500 disabled:opacity-40 transition-colors"
-                    >
-                      + Ep
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    disabled={isUpdatingProgress}
+                    onClick={(e) => handleStepEpisode(e, 1)}
+                    title="Next Episode"
+                    className="flex items-center justify-center rounded bg-purple-600 px-2.5 py-1 text-[11px] font-bold text-white hover:bg-purple-500 disabled:opacity-40 transition-colors shadow-sm"
+                  >
+                    + Ep
+                  </button>
                 </div>
               </div>
             );
           })()}
 
-          {/* Main Genre & Other Genres */}
+          {/* Genre Tags (Updated from Main Genre to Genre) */}
           {genresList.length > 0 && (
-            <div className="mt-2.5 flex flex-wrap items-center gap-1">
-              <span
-                className="inline-flex items-center gap-1 rounded bg-amber-500/15 px-2 py-0.5 text-[11px] font-semibold text-amber-300 border border-amber-500/30"
-                title={`Main Genre: ${genresList[0]}`}
-              >
-                <span className="text-[9px] uppercase tracking-wider text-amber-400/80 font-bold">Main</span>
-                {genresList[0]}
-              </span>
-              {genresList.slice(1, 3).map((genre) => (
+            <div className="mt-2.5 flex flex-wrap items-center gap-1.5 text-[11px]">
+              <span className="text-neutral-400 text-[10px] font-semibold">Genre:</span>
+              {genresList.map((genre) => (
                 <span
                   key={genre}
-                  className="rounded bg-[#1A1A1A] px-1.5 py-0.5 text-[11px] font-medium text-neutral-400 border border-neutral-800"
+                  className="rounded bg-[#1A1A1A] px-2 py-0.5 font-medium text-neutral-300 border border-neutral-800"
                 >
                   {genre}
                 </span>
               ))}
-              {genresList.length > 3 && (
-                <span className="rounded bg-[#1A1A1A] px-1.5 py-0.5 text-[11px] text-neutral-500 border border-neutral-800">
-                  +{genresList.length - 3}
-                </span>
-              )}
             </div>
           )}
         </div>

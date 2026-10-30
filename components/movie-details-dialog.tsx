@@ -583,23 +583,15 @@ export function MovieDetailsDialog({
                   {/* Genres */}
                   {genresList.length > 0 && (
                     <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                      <span className="text-[11px] font-semibold text-neutral-400 mr-0.5">Main Genre:</span>
-                      <span className="rounded-full bg-amber-500/20 px-2.5 py-0.5 text-xs font-semibold text-amber-300 border border-amber-500/30">
-                        {genresList[0]}
-                      </span>
-                      {genresList.length > 1 && (
-                        <>
-                          <span className="text-[11px] text-neutral-500 font-medium ml-1.5 mr-0.5">Other:</span>
-                          {genresList.slice(1).map((g) => (
-                            <span
-                              key={g}
-                              className="rounded-full bg-[#1A1A1A] px-2.5 py-0.5 text-xs text-neutral-300 border border-neutral-800"
-                            >
-                              {g}
-                            </span>
-                          ))}
-                        </>
-                      )}
+                      <span className="text-[11px] font-semibold text-neutral-400 mr-0.5">Genre:</span>
+                      {genresList.map((g) => (
+                        <span
+                          key={g}
+                          className="rounded-full bg-[#1A1A1A] px-2.5 py-0.5 text-xs text-neutral-300 border border-neutral-800"
+                        >
+                          {g}
+                        </span>
+                      ))}
                     </div>
                   )}
 

@@ -1,8 +1,8 @@
 import React from 'react';
 import {
   PanelLeft,
+  PanelLeftClose,
   Plus,
-  SquarePen,
   Tag,
   Search,
   X,
@@ -151,14 +151,14 @@ export function Sidebar({
               <PanelLeft className="h-5 w-5" />
             </button>
 
-            {/* 2. New / Import Title (ChatGPT SquarePen icon) */}
+            {/* 2. New / Import Title (Plus icon) */}
             <button
               type="button"
               onClick={onOpenImport}
               title="Import Title"
               className="flex h-9 w-9 items-center justify-center rounded-lg text-neutral-400 hover:bg-[#262626] hover:text-white transition-colors"
             >
-              <SquarePen className="h-4.5 w-4.5" />
+              <Plus className="h-4.5 w-4.5" />
             </button>
 
             {/* 3. Search */}
@@ -240,23 +240,24 @@ export function Sidebar({
       >
         <div className="flex h-full w-72 flex-col justify-between overflow-y-auto p-3.5 scrollbar-thin scrollbar-thumb-neutral-800">
           <div className="space-y-3.5">
-            {/* Top Bar with Sidebar Toggle & Actions (ChatGPT style) */}
-            <div className="flex items-center justify-between pb-1">
+            {/* Top Bar with Sidebar Toggle (like Book Manager) */}
+            <div className="flex items-center justify-between pb-1 px-1">
+              <div className="flex items-center gap-2">
+                <h2 className="text-sm font-bold text-white tracking-tight">
+                  Movies
+                </h2>
+                <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-[#262626] text-neutral-300 border border-neutral-700">
+                  {totalResults}
+                </span>
+              </div>
+
               <button
                 type="button"
                 onClick={onToggle}
                 title="Close sidebar"
                 className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-800 hover:text-white transition-colors"
               >
-                <PanelLeft className="h-4.5 w-4.5" />
-              </button>
-              <button
-                type="button"
-                onClick={onOpenImport}
-                title="Import Title"
-                className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-800 hover:text-white transition-colors"
-              >
-                <SquarePen className="h-4.5 w-4.5" />
+                <PanelLeftClose className="h-4.5 w-4.5" />
               </button>
             </div>
 
