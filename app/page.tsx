@@ -10,9 +10,10 @@ import {
   CheckCircle2,
   SlidersHorizontal,
   Tag,
+  PanelLeft,
 } from 'lucide-react';
 import type { Movie, WatchStatus } from '@/db/schema';
-import { SearchFilters } from '@/components/search-filters';
+import { Sidebar } from '@/components/sidebar';
 import { MovieCard } from '@/components/movie-card';
 import { MovieDetailsDialog } from '@/components/movie-details-dialog';
 import { ImportDialog } from '@/components/import-dialog';
@@ -44,6 +45,9 @@ export default function HomePage() {
   const [genreFilter, setGenreFilter] = useState('');
   const [yearFilter, setYearFilter] = useState('');
   const [sortBy, setSortBy] = useState('added_desc');
+
+  // Sidebar state
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   // Modals state
   const [isImportOpen, setIsImportOpen] = useState(false);
@@ -216,7 +220,7 @@ export default function HomePage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#212121] text-[#ECECEC] flex flex-col">
+    <div className="min-h-screen bg-[#1E1E1E] text-[#ECECEC] flex font-sans">
       {/* Toast Notification */}
       {toastMessage && (
         <div className="fixed bottom-5 right-5 z-50 flex items-center gap-2.5 rounded-xl border border-neutral-700 bg-[#262626] px-4 py-3 text-xs shadow-2xl animate-in slide-in-from-bottom-5">
@@ -229,129 +233,109 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* Main Top Header */}
-      <header className="sticky top-0 z-30 border-b border-neutral-800 bg-[#212121]/95 backdrop-blur-md">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3.5 sm:px-6 sm:py-4">
-          {/* Logo & Title */}
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white text-black shadow-sm">
-              <Film className="h-5 w-5" />
-            </div>
-            <div>
-              <h1 className="text-base sm:text-lg font-bold tracking-tight text-white">
-                Movie & Series Watchlist
-              </h1>
-              <p className="hidden sm:block text-[11px] text-neutral-400">
-                Personal movie & TV series tracking with IMDb imports
-              </p>
+      {/* ChatGPT-style Sidebar */}
+      <Sidebar
+        isOpen={isSidebarOpen}
+        onToggle={() => setIsSidebarOpen((prev) => !prev)}
+        onClose={() => setIsSidebarOpen(false)}
+        onOpenImport={() => setIsImportOpen(true)}
+        onOpenManageGenres={() => setIsManageGenresOpen(true)}
+        stats={stats}
+        isLoadingStats={isLoading && movies.length === 0}
+        search={search}
+        onSearchChange={setSearch}
+        status={statusFilter}
+        onStatusChange={setStatusFilter}
+        mediaType={mediaTypeFilter}
+        onMediaTypeChange={setMediaTypeFilter}
+        genre={genreFilter}
+        onGenreChange={setGenreFilter}
+        year={yearFilter}
+        onYearChange={setYearFilter}
+        sortBy={sortBy}
+        onSortByChange={setSortBy}
+        availableGenres={stats.genres}
+        totalResults={movies.length}
+        onResetFilters={handleResetFilters}
+      />
+
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col min-w-0 min-h-screen">
+        {/* Top Header Bar with Sidebar Toggle */}
+        <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-neutral-800 bg-[#1E1E1E]/95 px-4 sm:px-6 backdrop-blur-md">
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setIsSidebarOpen((prev) => !prev)}
+              title={isSidebarOpen ? 'Collapse sidebar' : 'Open sidebar'}
+              className="flex h-9 w-9 items-center justify-center rounded-lg border border-neutral-800 bg-[#262626] text-neutral-400 hover:border-neutral-700 hover:text-white transition-colors"
+            >
+              <PanelLeft className="h-4 w-4" />
+            </button>
+            <div className="flex items-center gap-2">
+              <span className="text-xs sm:text-sm font-semibold text-white">
+                {statusFilter === 'ALL'
+                  ? 'All Titles'
+                  : statusFilter === 'TO_DO'
+                  ? 'To Do'
+                  : statusFilter === 'DOING'
+                  ? 'Doing'
+                  : 'Done'}
+              </span>
+              <span className="rounded-full bg-neutral-800 px-2 py-0.5 text-[11px] font-medium text-neutral-400">
+                {movies.length} {movies.length === 1 ? 'item' : 'items'}
+              </span>
             </div>
           </div>
 
-          {/* Header Action Buttons */}
-          <div className="flex items-center gap-2 sm:gap-3">
-            <button
-              type="button"
-              onClick={() => setIsAboutOpen(true)}
-              title="About and TMDB Credits"
-              className="flex h-9 w-9 items-center justify-center rounded-xl border border-neutral-800 bg-[#262626] text-neutral-400 hover:border-neutral-700 hover:text-white transition-colors"
-            >
-              <Info className="h-4 w-4" />
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                fetchMovies();
-                fetchStats();
-              }}
-              title="Refresh watchlist"
-              className="flex h-9 w-9 items-center justify-center rounded-xl border border-neutral-800 bg-[#262626] text-neutral-400 hover:border-neutral-700 hover:text-white transition-colors"
-            >
-              <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-            </button>
-
-            {/* Genres of Movies button like english-grammar-quiz */}
-            <button
-              type="button"
-              onClick={() => setIsManageGenresOpen(true)}
-              title="CRUD Genres of Movies (Add, Edit, Delete genres in repo)"
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-[#222222] text-purple-300 hover:text-white hover:bg-[#2c2c2c] border border-purple-500/30 transition-all cursor-pointer shrink-0"
-            >
-              <Tag className="h-4 w-4 text-purple-400" />
-              <span className="hidden sm:inline">Genres of Movies</span>
-            </button>
-
-            {/* Prominent Import Title Button */}
-            <button
-              type="button"
-              onClick={() => setIsImportOpen(true)}
-              className="flex items-center gap-1.5 rounded-xl bg-white px-3.5 py-2 text-xs sm:text-sm font-semibold text-black shadow-sm hover:bg-neutral-200 transition-colors"
-            >
-              <Plus className="h-4 w-4" />
-              <span>Import Title</span>
-            </button>
+          <div className="flex items-center gap-2">
+            {!isSidebarOpen && (
+              <button
+                type="button"
+                onClick={() => setIsImportOpen(true)}
+                className="flex items-center gap-1.5 rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-black hover:bg-neutral-200 transition-colors shadow-sm"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                <span>Import Title</span>
+              </button>
+            )}
           </div>
-        </div>
-      </header>
+        </header>
 
-      {/* Main Container */}
-      <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-3.5 sm:px-6 sm:py-4 space-y-4">
-        {/* Unified Dashboard Stats + Search & Filters Bar (Gộp 2 phần thành 1) */}
-        <section aria-label="Search and filter movies">
-          <SearchFilters
-            stats={stats}
-            isLoadingStats={isLoading && movies.length === 0}
-            search={search}
-            onSearchChange={setSearch}
-            status={statusFilter}
-            onStatusChange={setStatusFilter}
-            mediaType={mediaTypeFilter}
-            onMediaTypeChange={setMediaTypeFilter}
-            genre={genreFilter}
-            onGenreChange={setGenreFilter}
-            year={yearFilter}
-            onYearChange={setYearFilter}
-            sortBy={sortBy}
-            onSortByChange={setSortBy}
-            availableGenres={stats.genres}
-            totalResults={movies.length}
-            onResetFilters={handleResetFilters}
-          />
-        </section>
-
-        {/* Responsive Movie Collection Grid (Kích thước & layout giống ảnh Udemy reference) */}
-        <section aria-label="Movie collection" className="pt-1">
-          {isLoading && movies.length === 0 ? (
-            /* Skeleton Loading Grid */
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6">
-              {[...Array(8)].map((_, i) => (
-                <div
-                  key={i}
-                  className="flex flex-col justify-between h-[360px] animate-pulse rounded-2xl bg-[#262626] border border-neutral-800 p-3.5"
-                >
-                  <div className="aspect-video w-full rounded-xl bg-neutral-800/80" />
-                  <div className="space-y-2 pt-3">
-                    <div className="h-4 w-3/4 rounded bg-neutral-800" />
-                    <div className="h-3 w-1/2 rounded bg-neutral-800" />
+        {/* Main Content Grid */}
+        <main className="flex-1 px-4 py-4 sm:px-6 sm:py-6">
+          <section aria-label="Movie collection">
+            {isLoading && movies.length === 0 ? (
+              /* Skeleton Loading Grid */
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 sm:gap-6">
+                {[...Array(8)].map((_, i) => (
+                  <div
+                    key={i}
+                    className="flex flex-col justify-between h-[360px] animate-pulse rounded-2xl bg-[#262626] border border-neutral-800 p-3.5"
+                  >
+                    <div className="aspect-video w-full rounded-xl bg-neutral-800/80" />
+                    <div className="space-y-2 pt-3">
+                      <div className="h-4 w-3/4 rounded bg-neutral-800" />
+                      <div className="h-3 w-1/2 rounded bg-neutral-800" />
+                    </div>
+                    <div className="h-8 w-full rounded-lg bg-neutral-800/60 mt-4" />
                   </div>
-                  <div className="h-8 w-full rounded-lg bg-neutral-800/60 mt-4" />
-                </div>
-              ))}
-            </div>
-          ) : movies.length > 0 ? (
-            /* Movie Cards Grid */
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6">
-              {movies.map((movie) => (
-                <MovieCard
-                  key={movie.id}
-                  movie={movie}
-                  onOpenDetails={(m) => setSelectedMovie(m)}
-                  onStatusChange={handleStatusChange}
-                  onUpdateMovie={handleUpdateMovie}
-                />
-              ))}
-            </div>
-          ) : (
+                ))}
+              </div>
+            ) : movies.length > 0 ? (
+              /* Movie Cards Grid */
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 sm:gap-6">
+                {movies.map((movie) => (
+                  <MovieCard
+                    key={movie.id}
+                    movie={movie}
+                    onOpenDetails={(m) => setSelectedMovie(m)}
+                    onStatusChange={handleStatusChange}
+                    onUpdateMovie={handleUpdateMovie}
+                  />
+                ))}
+              </div>
+            ) : (
             /* Empty State */
             <div className="flex min-h-[320px] flex-col items-center justify-center rounded-2xl border border-neutral-800 bg-[#262626] p-8 text-center">
               <div className="flex h-14 w-14 items-center justify-center rounded-full bg-neutral-900 border border-neutral-800 text-neutral-500 mb-4">
@@ -406,6 +390,7 @@ export default function HomePage() {
           </p>
         </div>
       </footer>
+      </div>
 
       {/* Dialogs */}
       <ImportDialog
