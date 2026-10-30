@@ -2,6 +2,7 @@ import React from 'react';
 import {
   PanelLeft,
   Plus,
+  SquarePen,
   Tag,
   Search,
   X,
@@ -11,6 +12,7 @@ import {
   Clock,
   PlayCircle,
   CheckCircle2,
+  Library,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -131,6 +133,94 @@ export function Sidebar({
 
   return (
     <>
+      {/* 1. Collapsed Mini-Sidebar Rail (Khi đóng sidebar giống ảnh ChatGPT) */}
+      {!isOpen && (
+        <aside
+          aria-label="Collapsed sidebar"
+          className="hidden md:flex h-screen w-14 sticky top-0 z-30 flex-col justify-between items-center py-3.5 px-2 bg-[#171717] border-r border-neutral-800/80 shrink-0 select-none"
+        >
+          {/* Top Icons Stack */}
+          <div className="flex flex-col items-center gap-3">
+            {/* 1. Toggle Sidebar Icon */}
+            <button
+              type="button"
+              onClick={onToggle}
+              title="Open sidebar"
+              className="flex h-9 w-9 items-center justify-center rounded-lg text-neutral-400 hover:bg-[#262626] hover:text-white transition-colors"
+            >
+              <PanelLeft className="h-5 w-5" />
+            </button>
+
+            {/* 2. New / Import Title (ChatGPT SquarePen icon) */}
+            <button
+              type="button"
+              onClick={onOpenImport}
+              title="Import Title"
+              className="flex h-9 w-9 items-center justify-center rounded-lg text-neutral-400 hover:bg-[#262626] hover:text-white transition-colors"
+            >
+              <SquarePen className="h-4.5 w-4.5" />
+            </button>
+
+            {/* 3. Search */}
+            <button
+              type="button"
+              onClick={onToggle}
+              title="Search watchlist"
+              className="flex h-9 w-9 items-center justify-center rounded-lg text-neutral-400 hover:bg-[#262626] hover:text-white transition-colors"
+            >
+              <Search className="h-4.5 w-4.5" />
+            </button>
+
+            {/* 4. Genres */}
+            <button
+              type="button"
+              onClick={onOpenManageGenres}
+              title="Genres of Movies"
+              className="flex h-9 w-9 items-center justify-center rounded-lg text-neutral-400 hover:bg-[#262626] hover:text-white transition-colors"
+            >
+              <Tag className="h-4.5 w-4.5" />
+            </button>
+
+            {/* 5. To Do Status filter */}
+            <button
+              type="button"
+              onClick={() => onStatusChange(status === 'TO_DO' ? 'ALL' : 'TO_DO')}
+              title="To do list"
+              className={`flex h-9 w-9 items-center justify-center rounded-lg transition-colors ${
+                status === 'TO_DO'
+                  ? 'bg-yellow-400/20 text-yellow-400 ring-1 ring-yellow-400/40'
+                  : 'text-neutral-400 hover:bg-[#262626] hover:text-white'
+              }`}
+            >
+              <Clock className="h-4.5 w-4.5" />
+            </button>
+
+            {/* 6. All Watchlist Library */}
+            <button
+              type="button"
+              onClick={() => onStatusChange('ALL')}
+              title="Watchlist library"
+              className={`flex h-9 w-9 items-center justify-center rounded-lg transition-colors ${
+                status === 'ALL'
+                  ? 'bg-purple-500/20 text-purple-300 ring-1 ring-purple-500/40'
+                  : 'text-neutral-400 hover:bg-[#262626] hover:text-white'
+              }`}
+            >
+              <Library className="h-4.5 w-4.5" />
+            </button>
+          </div>
+
+          {/* Bottom: User Avatar (Orange Circle with "H2" matching the screenshot) */}
+          <div
+            title="Toàn (H2)"
+            className="flex h-7 w-7 items-center justify-center rounded-full bg-orange-600 text-[11px] font-bold text-white shadow-sm ring-1 ring-orange-500/50 hover:opacity-90 cursor-pointer"
+          >
+            H2
+          </div>
+        </aside>
+      )}
+
+      {/* 2. Expanded Sidebar (When open) */}
       {/* Mobile Backdrop Overlay */}
       {isOpen && (
         <div
@@ -140,17 +230,17 @@ export function Sidebar({
         />
       )}
 
-      {/* Sidebar Container - ChatGPT style */}
+      {/* Expanded Sidebar Drawer / Container */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex h-screen w-72 flex-col border-r border-neutral-800 bg-[#171717] text-[#ECECEC] transition-transform duration-200 ease-in-out md:sticky md:top-0 md:z-20 md:transition-all ${
+        className={`fixed inset-y-0 left-0 z-50 flex h-screen w-72 flex-col border-r border-neutral-800 bg-[#171717] text-[#ECECEC] transition-all duration-200 ease-in-out md:sticky md:top-0 md:z-20 ${
           isOpen
             ? 'translate-x-0 md:w-72'
-            : '-translate-x-full md:w-0 md:translate-x-0 md:overflow-hidden md:border-r-0'
+            : '-translate-x-full md:hidden'
         }`}
       >
         <div className="flex h-full w-72 flex-col justify-between overflow-y-auto p-3.5 scrollbar-thin scrollbar-thumb-neutral-800">
           <div className="space-y-3.5">
-            {/* Top Bar with Sidebar Toggle & Actions (ChatGPT "+ New chat" style) */}
+            {/* Top Bar with Sidebar Toggle & Actions (ChatGPT style) */}
             <div className="flex items-center justify-between gap-2 pb-1">
               <button
                 type="button"
@@ -376,8 +466,8 @@ export function Sidebar({
             )}
           </div>
 
-          {/* Bottom of Sidebar: Reset Filters & Summary */}
-          <div className="pt-3 border-t border-neutral-800/80 space-y-2">
+          {/* Bottom of Sidebar: Reset Filters, User Avatar & Summary */}
+          <div className="pt-3 border-t border-neutral-800/80 space-y-2.5">
             {isFiltered && (
               <button
                 type="button"
@@ -389,11 +479,21 @@ export function Sidebar({
               </button>
             )}
 
-            <div className="flex items-center justify-between text-[11px] text-neutral-500 px-1">
-              <span>Showing results:</span>
-              <span className="font-semibold text-neutral-300">
-                {totalResults} {totalResults === 1 ? 'title' : 'titles'}
-              </span>
+            <div className="flex items-center justify-between px-1">
+              <div className="flex items-center gap-2">
+                <div
+                  title="Toàn (H2)"
+                  className="flex h-7 w-7 items-center justify-center rounded-full bg-orange-600 text-[11px] font-bold text-white shadow-sm ring-1 ring-orange-500/50 shrink-0"
+                >
+                  H2
+                </div>
+                <div className="flex flex-col min-w-0">
+                  <span className="text-xs font-semibold text-white truncate">Toàn</span>
+                  <span className="text-[10px] text-neutral-500 truncate">
+                    {totalResults} {totalResults === 1 ? 'title' : 'titles'}
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
         </div>

@@ -261,14 +261,15 @@ export default function HomePage() {
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 min-h-screen">
-        {/* Top Header Bar with Sidebar Toggle */}
-        <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-neutral-800 bg-[#1E1E1E]/95 px-4 sm:px-6 backdrop-blur-md">
+        {/* Top Header Bar */}
+        <header className="sticky top-0 z-20 flex h-12 items-center justify-between border-b border-neutral-800/80 bg-[#1E1E1E]/95 px-4 sm:px-6 backdrop-blur-md">
           <div className="flex items-center gap-3">
+            {/* Mobile Sidebar Toggle Button */}
             <button
               type="button"
               onClick={() => setIsSidebarOpen((prev) => !prev)}
-              title={isSidebarOpen ? 'Collapse sidebar' : 'Open sidebar'}
-              className="flex h-9 w-9 items-center justify-center rounded-lg border border-neutral-800 bg-[#262626] text-neutral-400 hover:border-neutral-700 hover:text-white transition-colors"
+              title={isSidebarOpen ? 'Close sidebar' : 'Open sidebar'}
+              className="md:hidden flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-800 bg-[#262626] text-neutral-400 hover:text-white transition-colors"
             >
               <PanelLeft className="h-4 w-4" />
             </button>
@@ -286,19 +287,6 @@ export default function HomePage() {
                 {movies.length} {movies.length === 1 ? 'item' : 'items'}
               </span>
             </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            {!isSidebarOpen && (
-              <button
-                type="button"
-                onClick={() => setIsImportOpen(true)}
-                className="flex items-center gap-1.5 rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-black hover:bg-neutral-200 transition-colors shadow-sm"
-              >
-                <Plus className="h-3.5 w-3.5" />
-                <span>Import Title</span>
-              </button>
-            )}
           </div>
         </header>
 
