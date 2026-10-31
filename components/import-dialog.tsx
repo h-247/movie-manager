@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   X,
   Plus,
@@ -90,6 +90,17 @@ export function ImportDialog({
   const [isImportingJson, setIsImportingJson] = useState(false);
   const [overwriteExisting, setOverwriteExisting] = useState(false);
   const [portabilityMessage, setPortabilityMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  // Close on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.key === 'Escape' || e.key === 'Esc') && isOpen) {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
