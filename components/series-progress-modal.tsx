@@ -273,10 +273,10 @@ export function SeriesProgressModal({
         newHour = null;
         newMinute = null;
       } else {
-        // Some Done, some To do: current episode is the first To do episode
+        // Some Done, some To do: the series is in progress (DOING), next episode is the first To do episode
+        newStatus = 'DOING';
         const firstToDo = rows.find((r) => r.status === 'To do');
         if (firstToDo) {
-          newStatus = 'TO_DO';
           newSeason = firstToDo.season;
           newEpisode = firstToDo.episode;
         }

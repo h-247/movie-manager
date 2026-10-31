@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { MovieService } from '@/lib/movies/service';
 import type { Movie } from '@/db/schema';
 import * as tmdbModule from '@/lib/tmdb';
+import { getSeriesEpisodes, getActiveSeriesEpisode } from '@/components/movie-card';
 
 describe('Movie Watchlist Integration Tests', () => {
   let dbRecords: Movie[] = [];
@@ -503,5 +504,78 @@ describe('Movie Watchlist Integration Tests', () => {
     expect(parsed[1].status).toBe('Doing');
     expect(parsed[1].hour).toBe(1);
     expect(parsed[1].minute).toBe(25);
+  });
+
+  it('15. Accurately determines active series episode and derives series overall status', () => {
+    const mockSeries: Movie = {
+      id: 'series_progress_test',
+      userId: 'user_123',
+      imdbId: 'tt12345678',
+      imdbUrl: 'https://www.imdb.com/title/tt12345678/',
+      tmdbId: 12345,
+      title: 'Crew Girl',
+      originalTitle: 'Crew Girl',
+      mediaType: 'SERIES',
+      releaseDate: '2026-01-01',
+      releaseYear: 2026,
+      posterPath: null,
+      overview: null,
+      runtimeMinutes: 45,
+      genres: JSON.stringify(['Drama', 'Romance']),
+      countries: JSON.stringify(['Canada']),
+      status: 'TO_DO',
+      personalRating: null,
+      notes: null,
+      startedAt: null,
+      completedAt: null,
+      totalSeasons: 2,
+      totalEpisodes: 16,
+      currentSeason: 1,
+      currentEpisode: 1,
+      currentHour: null,
+      currentMinute: null,
+      seriesProgress: null,
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+    };
+
+    // 1. Initial state: S1 E1 To do
+    const initialEpisodes = getSeriesEpisodes(mockSeries);
+    expect(initialEpisodes).toHaveLength(16);
+    expect(initialEpisodes[0]).toMatchObject({ season: 1, episode: 1, status: 'To do' });
+    const initialActive = getActiveSeriesEpisode(mockSeries, initialEpisodes);
+    expect(initialActive).toMatchObject({ season: 1, episode: 1, status: 'To do' });
+
+    // 2. Mark S1 E1 as Done: next episode is S1 E2 To do
+    const progressWithEp1Done = initialEpisodes.map((ep) =>
+      ep.season === 1 && ep.episode === 1 ? { ...ep, status: 'Done' as const } : ep,
+    );
+    const seriesWithEp1Done: Movie = {
+      ...mockSeries,
+      status: 'DOING',
+      currentSeason: 1,
+      currentEpisode: 2,
+      seriesProgress: JSON.stringify(progressWithEp1Done),
+    };
+    const activeEpAfterDone = getActiveSeriesEpisode(
+      seriesWithEp1Done,
+      getSeriesEpisodes(seriesWithEp1Done),
+    );
+    expect(activeEpAfterDone).toMatchObject({ season: 1, episode: 2, status: 'To do' });
+
+    // 3. Mark all episodes as Done: active is S2 E8 Done
+    const allDoneEpisodes = initialEpisodes.map((ep) => ({ ...ep, status: 'Done' as const }));
+    const seriesAllDone: Movie = {
+      ...mockSeries,
+      status: 'DONE',
+      currentSeason: 2,
+      currentEpisode: 8,
+      seriesProgress: JSON.stringify(allDoneEpisodes),
+    };
+    const activeEpAllDone = getActiveSeriesEpisode(
+      seriesAllDone,
+      getSeriesEpisodes(seriesAllDone),
+    );
+    expect(activeEpAllDone).toMatchObject({ season: 2, episode: 8, status: 'Done' });
   });
 });
