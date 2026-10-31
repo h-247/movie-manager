@@ -151,7 +151,7 @@ export function SeriesProgressModal({
   // Handle ESC key to close
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen && !isSubmitting) {
+      if ((e.key === 'Escape' || e.key === 'Esc') && isOpen && !isSubmitting) {
         onClose();
       }
     };

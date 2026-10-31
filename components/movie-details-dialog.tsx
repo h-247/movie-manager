@@ -95,6 +95,21 @@ export function MovieDetailsDialog({
     }
   }, [movie]);
 
+  // Close on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.key === 'Escape' || e.key === 'Esc') && isOpen) {
+        onClose();
+      }
+    };
+    if (isOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen, onClose]);
+
   if (!isOpen || !movie) return null;
 
   const posterUrl = getFullPosterUrl(

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { X, ExternalLink, Film, Shield, Info } from 'lucide-react';
 
 interface AboutDialogProps {
@@ -7,6 +7,20 @@ interface AboutDialogProps {
 }
 
 export function AboutDialog({ isOpen, onClose }: AboutDialogProps) {
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.key === 'Escape' || e.key === 'Esc') && isOpen) {
+        onClose();
+      }
+    };
+    if (isOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   return (

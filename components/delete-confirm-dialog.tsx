@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AlertTriangle, Trash2, X } from 'lucide-react';
 import type { Movie } from '@/db/schema';
 
@@ -16,6 +16,20 @@ export function DeleteConfirmDialog({
   onConfirm,
 }: DeleteConfirmDialogProps) {
   const [isDeleting, setIsDeleting] = useState(false);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.key === 'Escape' || e.key === 'Esc') && isOpen && !isDeleting) {
+        onClose();
+      }
+    };
+    if (isOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen, isDeleting, onClose]);
 
   if (!isOpen || !movie) return null;
 

@@ -66,7 +66,7 @@ export function ManageGenresModal({
   // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen && !isSubmitting) {
+      if ((e.key === 'Escape' || e.key === 'Esc') && isOpen && !isSubmitting) {
         onClose();
       }
     };
