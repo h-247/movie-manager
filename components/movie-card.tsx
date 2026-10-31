@@ -3,6 +3,7 @@ import { ExternalLink, Star, Film, ChevronDown, Check, Globe, Edit2, X } from 'l
 import type { Movie, WatchStatus } from '@/db/schema';
 import { StatusBadge } from './status-badge';
 import { getFullPosterUrl } from '@/lib/tmdb';
+import { SeriesProgressModal } from './series-progress-modal';
 
 function parseListField(val: string | null | undefined): string[] {
   if (!val) return [];
@@ -39,15 +40,24 @@ export function MovieCard({
   const [showStatusMenu, setShowStatusMenu] = useState(false);
 
   // Series progress edit state on card
+  const [isSeriesModalOpen, setIsSeriesModalOpen] = useState(false);
   const [isEditingProgress, setIsEditingProgress] = useState(false);
   const [editSeasonVal, setEditSeasonVal] = useState<number | string>(movie.currentSeason || 1);
   const [editEpisodeVal, setEditEpisodeVal] = useState<number | string>(movie.currentEpisode || 1);
+  const [editStatusVal, setEditStatusVal] = useState<'To do' | 'Doing' | 'Done'>(
+    movie.status === 'DONE' ? 'Done' : movie.status === 'DOING' ? 'Doing' : 'To do',
+  );
+  const [editHourVal, setEditHourVal] = useState<number | string>(movie.currentHour || 0);
+  const [editMinuteVal, setEditMinuteVal] = useState<number | string>(movie.currentMinute || 0);
   const [isUpdatingProgress, setIsUpdatingProgress] = useState(false);
 
   useEffect(() => {
     setEditSeasonVal(movie.currentSeason || 1);
     setEditEpisodeVal(movie.currentEpisode || 1);
-  }, [movie.currentSeason, movie.currentEpisode]);
+    setEditStatusVal(movie.status === 'DONE' ? 'Done' : movie.status === 'DOING' ? 'Doing' : 'To do');
+    setEditHourVal(movie.currentHour || 0);
+    setEditMinuteVal(movie.currentMinute || 0);
+  }, [movie.currentSeason, movie.currentEpisode, movie.status, movie.currentHour, movie.currentMinute]);
 
   const posterUrl = getFullPosterUrl(movie.posterPath);
 
@@ -113,12 +123,20 @@ export function MovieCard({
 
     const validS = isNaN(s) ? 1 : Math.min(Math.max(1, s), totalSeas);
     const validEp = isNaN(ep) ? 1 : Math.min(Math.max(1, ep), epsPerSeason);
+    const isDoing = editStatusVal === 'Doing';
+    const isDone = editStatusVal === 'Done';
+    const newDbStatus: 'TO_DO' | 'DOING' | 'DONE' = isDone ? 'DONE' : isDoing ? 'DOING' : 'TO_DO';
+    const newHour = isDoing ? Math.min(23, Math.max(0, parseInt(String(editHourVal), 10) || 0)) : null;
+    const newMinute = isDoing ? Math.min(59, Math.max(0, parseInt(String(editMinuteVal), 10) || 0)) : null;
 
     try {
       setIsUpdatingProgress(true);
       await onUpdateMovie(movie.id, {
         currentSeason: validS,
         currentEpisode: validEp,
+        status: newDbStatus,
+        currentHour: newHour,
+        currentMinute: newMinute,
       });
       setIsEditingProgress(false);
     } finally {
@@ -237,35 +255,113 @@ export function MovieCard({
                   onPointerDown={(e) => e.stopPropagation()}
                 >
                   <div className="flex items-center justify-between text-[11px]">
-                    <span className="font-semibold text-purple-200">Edit Series Progress</span>
-                    <span className="rounded bg-purple-900/60 px-1.5 py-0.5 text-[10px] font-bold text-purple-200 border border-purple-500/30">
-                      S{curSeason} E{curEpisode}
-                    </span>
+                    <span className="font-semibold text-purple-200">Manage Series Progress</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsEditingProgress(false);
+                        setIsSeriesModalOpen(true);
+                      }}
+                      className="text-[10px] text-purple-300 hover:text-white underline"
+                    >
+                      Full Table ↗
+                    </button>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2 text-[11px]">
-                    <div>
-                      <label className="block text-[10px] text-neutral-400 mb-0.5">Season:</label>
-                      <input
-                        type="number"
-                        min={1}
-                        max={movie.totalSeasons || 99}
-                        value={editSeasonVal}
-                        onChange={(e) => setEditSeasonVal(e.target.value)}
-                        className="w-full rounded bg-[#1A1A1A] border border-neutral-700 px-2 py-1 text-xs text-white focus:border-purple-500 focus:outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] text-neutral-400 mb-0.5">Current Episode:</label>
-                      <input
-                        type="number"
-                        min={1}
-                        max={epsPerSeason || 999}
-                        value={editEpisodeVal}
-                        onChange={(e) => setEditEpisodeVal(e.target.value)}
-                        className="w-full rounded bg-[#1A1A1A] border border-neutral-700 px-2 py-1 text-xs text-white focus:border-purple-500 focus:outline-none"
-                      />
-                    </div>
+                  {/* 4-column Table: Season, Episode, Status, Hour & Minute */}
+                  <div className="overflow-x-auto rounded border border-neutral-700/60 bg-[#161616]">
+                    <table className="w-full text-left text-[11px]">
+                      <thead>
+                        <tr className="border-b border-neutral-700/60 bg-[#222222] text-neutral-300 text-[10px]">
+                          <th className="py-1 px-1.5 font-semibold">Season</th>
+                          <th className="py-1 px-1.5 font-semibold">Episode</th>
+                          <th className="py-1 px-1.5 font-semibold">Status</th>
+                          <th className="py-1 px-1.5 font-semibold">Hour &amp; Minute (Doing)</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          {/* 1. Season */}
+                          <td className="py-1 px-1.5">
+                            <input
+                              type="number"
+                              min={1}
+                              max={movie.totalSeasons || 99}
+                              value={editSeasonVal}
+                              onChange={(e) => setEditSeasonVal(e.target.value)}
+                              className="w-10 rounded bg-[#222222] border border-neutral-700 px-1 py-0.5 text-center text-xs text-white focus:border-purple-500 focus:outline-none"
+                            />
+                          </td>
+
+                          {/* 2. Episode */}
+                          <td className="py-1 px-1.5">
+                            <input
+                              type="number"
+                              min={1}
+                              max={epsPerSeason || 999}
+                              value={editEpisodeVal}
+                              onChange={(e) => setEditEpisodeVal(e.target.value)}
+                              className="w-10 rounded bg-[#222222] border border-neutral-700 px-1 py-0.5 text-center text-xs text-white focus:border-purple-500 focus:outline-none"
+                            />
+                          </td>
+
+                          {/* 3. Status */}
+                          <td className="py-1 px-1.5">
+                            <select
+                              value={editStatusVal}
+                              onChange={(e) => setEditStatusVal(e.target.value as any)}
+                              className={`rounded border px-1 py-0.5 text-[11px] font-semibold focus:outline-none ${
+                                editStatusVal === 'Done'
+                                  ? 'bg-emerald-950/60 border-emerald-500/50 text-emerald-300'
+                                  : editStatusVal === 'Doing'
+                                  ? 'bg-sky-950/60 border-sky-500/50 text-sky-300 font-bold'
+                                  : 'bg-amber-950/60 border-amber-500/50 text-amber-300'
+                              }`}
+                            >
+                              <option value="To do">To do</option>
+                              <option value="Doing">Doing</option>
+                              <option value="Done">Done</option>
+                            </select>
+                          </td>
+
+                          {/* 4. Hour và Minute để sử dụng khi Status là doing */}
+                          <td className="py-1 px-1.5">
+                            <div className="flex items-center gap-1">
+                              <input
+                                type="number"
+                                min={0}
+                                max={23}
+                                disabled={editStatusVal !== 'Doing'}
+                                value={editStatusVal === 'Doing' ? editHourVal : 0}
+                                onChange={(e) => setEditHourVal(e.target.value)}
+                                placeholder="0"
+                                className={`w-8 rounded border px-0.5 py-0.5 text-center text-xs ${
+                                  editStatusVal === 'Doing'
+                                    ? 'border-sky-500/60 bg-[#222222] text-white focus:border-sky-400'
+                                    : 'border-neutral-800 bg-neutral-900 text-neutral-600 opacity-50 cursor-not-allowed'
+                                }`}
+                              />
+                              <span className={`text-[10px] ${editStatusVal === 'Doing' ? 'text-sky-400 font-bold' : 'text-neutral-600'}`}>h</span>
+                              <input
+                                type="number"
+                                min={0}
+                                max={59}
+                                disabled={editStatusVal !== 'Doing'}
+                                value={editStatusVal === 'Doing' ? editMinuteVal : 0}
+                                onChange={(e) => setEditMinuteVal(e.target.value)}
+                                placeholder="0"
+                                className={`w-8 rounded border px-0.5 py-0.5 text-center text-xs ${
+                                  editStatusVal === 'Doing'
+                                    ? 'border-sky-500/60 bg-[#222222] text-white focus:border-sky-400'
+                                    : 'border-neutral-800 bg-neutral-900 text-neutral-600 opacity-50 cursor-not-allowed'
+                                }`}
+                              />
+                              <span className={`text-[10px] ${editStatusVal === 'Doing' ? 'text-sky-400 font-bold' : 'text-neutral-600'}`}>m</span>
+                            </div>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
                   </div>
 
                   <div className="flex items-center justify-end gap-1.5 pt-1">
@@ -304,11 +400,16 @@ export function MovieCard({
                 onPointerDown={(e) => e.stopPropagation()}
               >
                 {/* 1. Current episode */}
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1.5 flex-wrap">
                   <span className="text-[11px] font-semibold text-purple-300">Series Progress:</span>
                   <span className="rounded bg-purple-500/30 px-2 py-0.5 text-xs font-bold text-purple-200 border border-purple-500/40 tracking-wide">
                     S{curSeason} E{curEpisode}
                   </span>
+                  {movie.status === 'DOING' && (movie.currentHour !== null || movie.currentMinute !== null) && (
+                    <span className="rounded bg-sky-500/20 px-1.5 py-0.5 text-[10px] font-bold text-sky-300 border border-sky-500/30">
+                      {movie.currentHour || 0}h {movie.currentMinute || 0}m
+                    </span>
+                  )}
                 </div>
 
                 {/* 2. Edit button & 3. Next episode button */}
@@ -317,9 +418,9 @@ export function MovieCard({
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
-                      setIsEditingProgress(true);
+                      setIsSeriesModalOpen(true);
                     }}
-                    title="Edit Series Progress"
+                    title="Manage Series Progress"
                     className="flex items-center gap-1 text-[11px] font-medium text-purple-300 hover:text-white bg-purple-900/40 hover:bg-purple-800/60 px-2 py-1 rounded transition-colors"
                   >
                     <Edit2 className="h-3 w-3" />
@@ -430,6 +531,16 @@ export function MovieCard({
           </div>
         </div>
       </div>
+
+      {/* Series Progress Modal */}
+      {isSeriesModalOpen && onUpdateMovie && (
+        <SeriesProgressModal
+          isOpen={isSeriesModalOpen}
+          onClose={() => setIsSeriesModalOpen(false)}
+          movie={movie}
+          onUpdateMovie={onUpdateMovie}
+        />
+      )}
     </div>
   );
 }

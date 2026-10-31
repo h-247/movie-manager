@@ -29,6 +29,9 @@ export const movies = sqliteTable(
     totalEpisodes: integer('total_episodes'),
     currentSeason: integer('current_season'),
     currentEpisode: integer('current_episode'),
+    currentHour: integer('current_hour'),
+    currentMinute: integer('current_minute'),
+    seriesProgress: text('series_progress'), // JSON string, e.g. [{"season":1,"episode":1,"status":"To do","hour":0,"minute":0}]
     genres: text('genres'), // JSON array string, e.g. ["Action", "Sci-Fi"]
     countries: text('countries'), // JSON array string, e.g. ["United States", "Canada"]
     status: text('status', { enum: ['TO_DO', 'DOING', 'DONE'] })

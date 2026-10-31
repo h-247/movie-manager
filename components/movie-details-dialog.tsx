@@ -14,6 +14,7 @@ import {
 import type { Movie, WatchStatus } from '@/db/schema';
 import { StatusBadge } from './status-badge';
 import { getFullPosterUrl } from '@/lib/tmdb';
+import { SeriesProgressModal } from './series-progress-modal';
 
 function parseListField(val: string | null | undefined): string[] {
   if (!val) return [];
@@ -53,6 +54,7 @@ export function MovieDetailsDialog({
   const [isEditingMetadata, setIsEditingMetadata] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [imageError, setImageError] = useState(false);
+  const [isProgressModalOpen, setIsProgressModalOpen] = useState(false);
 
   // Editable metadata fields
   const [editTitle, setEditTitle] = useState('');
@@ -514,9 +516,20 @@ export function MovieDetailsDialog({
                               </span>
                             )}
                           </div>
-                          <span className="rounded bg-purple-500/25 px-2 py-0.5 text-xs font-bold text-purple-200 border border-purple-500/40 tracking-wide">
-                            S{curSeason} E{curEpisode}
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className="rounded bg-purple-500/25 px-2 py-0.5 text-xs font-bold text-purple-200 border border-purple-500/40 tracking-wide">
+                              S{curSeason} E{curEpisode}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => setIsProgressModalOpen(true)}
+                              className="flex items-center gap-1 rounded bg-purple-900/40 hover:bg-purple-800/60 border border-purple-500/30 px-2 py-0.5 text-[11px] font-medium text-purple-300 hover:text-white transition-colors"
+                              title="Manage series progress table"
+                            >
+                              <Edit2 className="h-3 w-3" />
+                              <span>Manage Table</span>
+                            </button>
+                          </div>
                         </div>
 
                         {progressPercent !== null && (
@@ -668,6 +681,16 @@ export function MovieDetailsDialog({
           </button>
         </div>
       </div>
+
+      {/* Series Progress Modal */}
+      {isProgressModalOpen && (
+        <SeriesProgressModal
+          isOpen={isProgressModalOpen}
+          onClose={() => setIsProgressModalOpen(false)}
+          movie={movie}
+          onUpdateMovie={onUpdate}
+        />
+      )}
     </div>
   );
 }

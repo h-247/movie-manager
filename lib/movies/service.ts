@@ -36,6 +36,9 @@ export interface CreateMovieInput {
   totalEpisodes?: number | null;
   currentSeason?: number | null;
   currentEpisode?: number | null;
+  currentHour?: number | null;
+  currentMinute?: number | null;
+  seriesProgress?: string | null;
   genres?: string[] | string;
   countries?: string[] | string | null;
   status?: WatchStatus;
@@ -64,6 +67,9 @@ export interface UpdateMovieInput {
   totalEpisodes?: number | null;
   currentSeason?: number | null;
   currentEpisode?: number | null;
+  currentHour?: number | null;
+  currentMinute?: number | null;
+  seriesProgress?: string | null;
   genres?: string[] | string;
   countries?: string[] | string | null;
 }
@@ -245,6 +251,9 @@ export class MovieService {
       totalEpisodes: input.totalEpisodes ?? null,
       currentSeason: input.currentSeason ?? null,
       currentEpisode: input.currentEpisode ?? null,
+      currentHour: input.currentHour ?? null,
+      currentMinute: input.currentMinute ?? null,
+      seriesProgress: input.seriesProgress ?? null,
       genres: genresStr,
       countries: countriesStr,
       status,
@@ -297,6 +306,15 @@ export class MovieService {
     }
     if (input.currentEpisode !== undefined) {
       updates.currentEpisode = input.currentEpisode;
+    }
+    if (input.currentHour !== undefined) {
+      updates.currentHour = input.currentHour;
+    }
+    if (input.currentMinute !== undefined) {
+      updates.currentMinute = input.currentMinute;
+    }
+    if (input.seriesProgress !== undefined) {
+      updates.seriesProgress = input.seriesProgress;
     }
     if (input.title !== undefined) {
       updates.title = input.title.trim();

@@ -221,6 +221,9 @@ describe('Movie Watchlist Integration Tests', () => {
       totalEpisodes: null,
       currentSeason: null,
       currentEpisode: null,
+      currentHour: null,
+      currentMinute: null,
+      seriesProgress: null,
       genres: '["Drama"]',
       countries: null,
       status: 'TO_DO',
@@ -271,6 +274,9 @@ describe('Movie Watchlist Integration Tests', () => {
       totalEpisodes: null,
       currentSeason: null,
       currentEpisode: null,
+      currentHour: null,
+      currentMinute: null,
+      seriesProgress: null,
       genres: '["Drama"]',
       countries: null,
       status: 'DONE',
@@ -442,5 +448,60 @@ describe('Movie Watchlist Integration Tests', () => {
     expect(series.imdbId).toBe('tt38218082');
     expect(series.mediaType).toBe('SERIES');
     expect(series.status).toBe('TO_DO');
+  });
+
+  it('14. Manages series progress with 4 columns: Season, Episode, Status, Hour and Minute', async () => {
+    service.getMovieByImdbId = vi.fn().mockResolvedValue(null);
+    const series = await service.createMovie(
+      {
+        imdbId: 'tt9999991',
+        title: 'Test Series Progress',
+        mediaType: 'SERIES',
+        totalSeasons: 2,
+        totalEpisodes: 16,
+      },
+      'user_123',
+    );
+
+    const progressTable = [
+      { season: 1, episode: 1, status: 'Done', hour: 0, minute: 0 },
+      { season: 1, episode: 2, status: 'Doing', hour: 1, minute: 25 },
+      { season: 1, episode: 3, status: 'To do', hour: 0, minute: 0 },
+    ];
+
+    service.getMovieById = vi.fn().mockResolvedValue({
+      ...series,
+      currentSeason: 1,
+      currentEpisode: 2,
+      status: 'DOING',
+      currentHour: 1,
+      currentMinute: 25,
+      seriesProgress: JSON.stringify(progressTable),
+    });
+
+    const updated = await service.updateMovie(
+      series.id,
+      {
+        currentSeason: 1,
+        currentEpisode: 2,
+        status: 'DOING',
+        currentHour: 1,
+        currentMinute: 25,
+        seriesProgress: JSON.stringify(progressTable),
+      },
+      'user_123',
+    );
+
+    expect(updated.currentSeason).toBe(1);
+    expect(updated.currentEpisode).toBe(2);
+    expect(updated.status).toBe('DOING');
+    expect(updated.currentHour).toBe(1);
+    expect(updated.currentMinute).toBe(25);
+    expect(updated.seriesProgress).toBeTruthy();
+    const parsed = JSON.parse(updated.seriesProgress!);
+    expect(parsed).toHaveLength(3);
+    expect(parsed[1].status).toBe('Doing');
+    expect(parsed[1].hour).toBe(1);
+    expect(parsed[1].minute).toBe(25);
   });
 });
