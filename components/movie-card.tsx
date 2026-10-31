@@ -154,7 +154,7 @@ export function MovieCard({
       className="group relative flex flex-col justify-between rounded-2xl border border-neutral-800 bg-[#262626] p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-neutral-700 hover:shadow-xl hover:shadow-black/50 cursor-pointer"
     >
       <div>
-        {/* Top row: Crew Girl, Series, Canada, 2026, To do, and IMDb Link */}
+        {/* Top row: Crew Girl, Series, Canada, 2026, and IMDb Link */}
         <div className="flex items-center justify-between gap-2 pb-2.5 mb-2.5 border-b border-neutral-800/80">
           <div className="flex items-center gap-1.5 flex-wrap min-w-0">
             {/* 1. Crew Girl (Title) */}
@@ -190,9 +190,6 @@ export function MovieCard({
                 {movie.releaseYear}
               </span>
             )}
-
-            {/* 5. To do */}
-            <StatusBadge status={movie.status as WatchStatus} size="sm" />
           </div>
 
           <div className="flex items-center gap-1.5 shrink-0 ml-auto">
@@ -216,7 +213,7 @@ export function MovieCard({
         </div>
 
         <div>
-          {/* Series Progress on Card: shows episode, status selector, and next episode button */}
+          {/* Series Progress on Card: ONLY S1 E1 and 3 buttons To do, Doing, Done */}
           {movie.mediaType === 'SERIES' && (() => {
             const totalSeas = movie.totalSeasons || 1;
             const totalEps = movie.totalEpisodes || null;
@@ -252,67 +249,68 @@ export function MovieCard({
                 onMouseUp={(e) => e.stopPropagation()}
                 onPointerDown={(e) => e.stopPropagation()}
               >
-                {/* 1. Episode badge (click to manage episodes table) & Episode status dropdown */}
-                <div className="flex items-center gap-2 flex-wrap">
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setIsSeriesModalOpen(true);
-                    }}
-                    title="Click to view/manage all episodes"
-                    className="rounded bg-purple-500/30 px-2 py-0.5 text-xs font-bold text-purple-200 border border-purple-500/40 hover:bg-purple-500/50 transition-colors tracking-wide"
-                  >
-                    S{curSeason} E{curEpisode}
-                  </button>
+                {/* 1. Episode badge: S1 E1 */}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsSeriesModalOpen(true);
+                  }}
+                  title="Click to view/manage all episodes"
+                  className="rounded bg-purple-500/30 px-2.5 py-1 text-xs font-bold text-purple-200 border border-purple-500/40 hover:bg-purple-500/50 transition-colors tracking-wide"
+                >
+                  S{curSeason} E{curEpisode}
+                </button>
 
-                  <select
-                    value={curEpStatus}
-                    disabled={isUpdatingProgress}
-                    onChange={(e) =>
-                      handleEpisodeStatusChange(
-                        e,
-                        e.target.value as 'To do' | 'Doing' | 'Done',
-                      )
-                    }
-                    className={`rounded border px-1.5 py-0.5 text-[11px] font-semibold focus:outline-none transition-colors ${
-                      curEpStatus === 'Done'
-                        ? 'border-emerald-500/50 bg-emerald-950/60 text-emerald-300'
-                        : curEpStatus === 'Doing'
-                        ? 'border-sky-500/60 bg-sky-950/60 text-sky-300 font-bold'
-                        : 'border-amber-500/50 bg-amber-950/60 text-amber-300'
-                    }`}
-                  >
-                    <option value="To do" className="bg-[#1A1A1A] text-amber-300">
-                      To do
-                    </option>
-                    <option value="Doing" className="bg-[#1A1A1A] text-sky-300 font-bold">
-                      Doing
-                    </option>
-                    <option value="Done" className="bg-[#1A1A1A] text-emerald-300">
-                      Done
-                    </option>
-                  </select>
-
-                  {movie.status === 'DOING' &&
-                    (movie.currentHour !== null || movie.currentMinute !== null) && (
-                      <span className="rounded bg-sky-500/20 px-1.5 py-0.5 text-[10px] font-bold text-sky-300 border border-sky-500/30">
-                        {movie.currentHour || 0}h {movie.currentMinute || 0}m
-                      </span>
-                    )}
-                </div>
-
-                {/* 2. Next episode button */}
-                <div className="flex items-center gap-1.5 ml-auto">
-                  <button
-                    type="button"
-                    disabled={isUpdatingProgress}
-                    onClick={(e) => handleStepEpisode(e, 1)}
-                    title="Next Episode"
-                    className="flex items-center justify-center rounded bg-purple-600 px-2.5 py-1 text-[11px] font-bold text-white hover:bg-purple-500 disabled:opacity-40 transition-colors shadow-sm"
-                  >
-                    + Ep
-                  </button>
+                {/* 2. Three status buttons: To do, Doing, Done */}
+                <div className="flex items-center gap-1 rounded-lg bg-black/40 p-0.5 border border-purple-500/20">
+                  {(
+                    [
+                      {
+                        id: 'To do',
+                        label: 'To do',
+                        dot: 'bg-yellow-400',
+                        activeClass:
+                          'bg-yellow-500/25 text-yellow-300 border-yellow-500/40 font-bold shadow-sm',
+                      },
+                      {
+                        id: 'Doing',
+                        label: 'Doing',
+                        dot: 'bg-blue-400',
+                        activeClass:
+                          'bg-sky-500/25 text-sky-300 border-sky-500/40 font-bold shadow-sm',
+                      },
+                      {
+                        id: 'Done',
+                        label: 'Done',
+                        dot: 'bg-green-400',
+                        activeClass:
+                          'bg-emerald-500/25 text-emerald-300 border-emerald-500/40 font-bold shadow-sm',
+                      },
+                    ] as const
+                  ).map((btn) => {
+                    const isSelected = curEpStatus === btn.id;
+                    return (
+                      <button
+                        key={btn.id}
+                        type="button"
+                        disabled={isUpdatingProgress}
+                        onClick={(e) => handleEpisodeStatusChange(e, btn.id)}
+                        className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] transition-all border ${
+                          isSelected
+                            ? btn.activeClass
+                            : 'border-transparent text-neutral-400 hover:text-white hover:bg-neutral-800/50'
+                        } disabled:opacity-50`}
+                      >
+                        <span
+                          className={`h-1.5 w-1.5 rounded-full ${btn.dot} ${
+                            isSelected ? 'ring-1 ring-current' : 'opacity-60'
+                          }`}
+                        />
+                        <span>{btn.label}</span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             );
@@ -331,6 +329,11 @@ export function MovieCard({
               ))}
             </div>
           )}
+        </div>
+
+        {/* Movie Status at bottom of card */}
+        <div className="mt-3.5 border-t border-neutral-800/80 pt-2.5 flex items-center justify-between">
+          <StatusBadge status={movie.status as WatchStatus} size="sm" />
         </div>
       </div>
 
