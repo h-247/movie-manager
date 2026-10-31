@@ -244,7 +244,7 @@ export class MovieService {
       mediaType,
       releaseDate: input.releaseDate || null,
       releaseYear: input.releaseYear || null,
-      posterPath: input.posterPath || null,
+      posterPath: null,
       overview: input.overview ? input.overview.trim() : null,
       runtimeMinutes: input.runtimeMinutes || null,
       totalSeasons: input.totalSeasons ?? null,

@@ -205,24 +205,17 @@ export function MovieDetailsDialog({
         <div className="p-5 sm:p-6 space-y-6">
           {/* Main Info: Poster + Meta */}
           <div className="flex flex-col sm:flex-row gap-5">
-            {/* Poster */}
-            <div className="relative aspect-[2/3] w-36 sm:w-48 shrink-0 overflow-hidden rounded-xl bg-neutral-900 border border-neutral-800 mx-auto sm:mx-0">
-              {posterUrl && !imageError ? (
+            {/* Poster if available */}
+            {posterUrl && !imageError && (
+              <div className="relative aspect-[2/3] w-36 sm:w-48 shrink-0 overflow-hidden rounded-xl bg-neutral-900 border border-neutral-800 mx-auto sm:mx-0">
                 <img
                   src={posterUrl}
                   alt={movie.title}
                   onError={() => setImageError(true)}
                   className="h-full w-full object-cover"
                 />
-              ) : (
-                <div className="flex h-full w-full flex-col items-center justify-center p-4 text-neutral-600">
-                  <Film className="h-10 w-10 text-neutral-500" />
-                  <span className="mt-2 text-center text-[11px] text-neutral-400">
-                    No Poster
-                  </span>
-                </div>
-              )}
-            </div>
+              </div>
+            )}
 
             {/* Details or Edit Metadata Form */}
             <div className="flex-1 space-y-3">

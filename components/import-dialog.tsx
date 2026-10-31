@@ -675,19 +675,15 @@ export function ImportDialog({
                 ) : (
                   /* Automatic Metadata Preview */
                   <div className="flex gap-4">
-                    <div className="relative aspect-[2/3] w-24 shrink-0 overflow-hidden rounded-lg bg-neutral-900 border border-neutral-800">
-                      {previewData.metadata?.posterPath || previewData.unsupportedTitleInfo?.posterUrl ? (
+                    {(previewData.metadata?.posterPath || previewData.unsupportedTitleInfo?.posterUrl) && (
+                      <div className="relative aspect-[2/3] w-24 shrink-0 overflow-hidden rounded-lg bg-neutral-900 border border-neutral-800">
                         <img
                           src={getFullPosterUrl(previewData.metadata?.posterPath || previewData.unsupportedTitleInfo?.posterUrl || null)!}
                           alt={previewData.metadata?.title || previewData.unsupportedTitleInfo?.title || 'Poster'}
                           className="h-full w-full object-cover"
                         />
-                      ) : (
-                        <div className="flex h-full w-full items-center justify-center p-2 text-neutral-600">
-                          <Film className="h-6 w-6" />
-                        </div>
-                      )}
-                    </div>
+                      </div>
+                    )}
                     <div className="flex-1 space-y-1.5 text-xs">
                       <div className="flex items-center gap-2">
                         <h4 className="text-base font-bold text-white">

@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { ExternalLink, Star, Globe } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ExternalLink, Star, Globe, Clock } from 'lucide-react';
 import type { Movie, WatchStatus } from '@/db/schema';
 import { StatusBadge } from './status-badge';
 import { SeriesProgressModal } from './series-progress-modal';
@@ -145,6 +145,27 @@ export function MovieCard({
       ? getActiveSeriesEpisode(movie, seriesEpisodes)
       : null;
 
+  const [rawHour, setRawHour] = useState<string>(() =>
+    String(activeSeriesEpisode?.hour ?? movie.currentHour ?? 0),
+  );
+  const [rawMinute, setRawMinute] = useState<string>(() =>
+    String(activeSeriesEpisode?.minute ?? movie.currentMinute ?? 0),
+  );
+
+  useEffect(() => {
+    if (activeSeriesEpisode) {
+      setRawHour(String(activeSeriesEpisode.hour ?? movie.currentHour ?? 0));
+      setRawMinute(String(activeSeriesEpisode.minute ?? movie.currentMinute ?? 0));
+    }
+  }, [
+    activeSeriesEpisode?.season,
+    activeSeriesEpisode?.episode,
+    activeSeriesEpisode?.hour,
+    activeSeriesEpisode?.minute,
+    movie.currentHour,
+    movie.currentMinute,
+  ]);
+
   const displayStatus: WatchStatus = (() => {
     if (movie.mediaType === 'SERIES' && seriesEpisodes.length > 0) {
       if (seriesEpisodes.every((ep) => ep.status === 'Done')) return 'DONE';
@@ -155,6 +176,59 @@ export function MovieCard({
     }
     return movie.status as WatchStatus;
   })();
+
+  const handleTimeUpdate = async (newH: number, newM: number) => {
+    if (!onUpdateMovie || !activeSeriesEpisode) return;
+
+    const episodes = getSeriesEpisodes(movie);
+    const updatedEpisodes = episodes.map((item) => {
+      if (
+        item.season === activeSeriesEpisode.season &&
+        item.episode === activeSeriesEpisode.episode
+      ) {
+        return { ...item, hour: newH, minute: newM };
+      }
+      return item;
+    });
+
+    await onUpdateMovie(movie.id, {
+      currentHour: newH,
+      currentMinute: newM,
+      seriesProgress: JSON.stringify(updatedEpisodes),
+    });
+  };
+
+  const handleHourChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setRawHour(val);
+    const parsed = parseInt(val);
+    if (!isNaN(parsed)) {
+      const clamped = Math.max(0, Math.min(99, parsed));
+      handleTimeUpdate(clamped, Math.max(0, Math.min(59, parseInt(rawMinute) || 0)));
+    }
+  };
+
+  const handleHourBlur = () => {
+    const parsed = Math.max(0, Math.min(99, parseInt(rawHour) || 0));
+    setRawHour(String(parsed));
+    handleTimeUpdate(parsed, Math.max(0, Math.min(59, parseInt(rawMinute) || 0)));
+  };
+
+  const handleMinuteChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setRawMinute(val);
+    const parsed = parseInt(val);
+    if (!isNaN(parsed)) {
+      const clamped = Math.max(0, Math.min(59, parsed));
+      handleTimeUpdate(Math.max(0, Math.min(99, parseInt(rawHour) || 0)), clamped);
+    }
+  };
+
+  const handleMinuteBlur = () => {
+    const parsed = Math.max(0, Math.min(59, parseInt(rawMinute) || 0));
+    setRawMinute(String(parsed));
+    handleTimeUpdate(Math.max(0, Math.min(99, parseInt(rawHour) || 0)), parsed);
+  };
 
   const handleEpisodeStatusChange = async (
     e: React.MouseEvent,
@@ -173,7 +247,18 @@ export function MovieCard({
       const updatedEpisodes = episodes.map((item) => {
         if (item.season === targetSeason && item.episode === targetEpisode) {
           foundTarget = true;
-          return { ...item, status: newEpStatus };
+          return {
+            ...item,
+            status: newEpStatus,
+            hour:
+              newEpStatus === 'Doing'
+                ? (item.hour ?? Math.max(0, Math.min(99, parseInt(rawHour) || 0)))
+                : 0,
+            minute:
+              newEpStatus === 'Doing'
+                ? (item.minute ?? Math.max(0, Math.min(59, parseInt(rawMinute) || 0)))
+                : 0,
+          };
         }
         return item;
       });
@@ -183,8 +268,8 @@ export function MovieCard({
           season: targetSeason,
           episode: targetEpisode,
           status: newEpStatus,
-          hour: 0,
-          minute: 0,
+          hour: newEpStatus === 'Doing' ? Math.max(0, Math.min(99, parseInt(rawHour) || 0)) : 0,
+          minute: newEpStatus === 'Doing' ? Math.max(0, Math.min(59, parseInt(rawMinute) || 0)) : 0,
         });
         updatedEpisodes.sort((a, b) => a.season - b.season || a.episode - b.episode);
       }
@@ -205,12 +290,16 @@ export function MovieCard({
 
       let nextSeason = targetSeason;
       let nextEpisode = targetEpisode;
+      let nextHour: number | null = null;
+      let nextMinute: number | null = null;
 
       if (newEpStatus === 'Done') {
         const doingEp = updatedEpisodes.find((ep) => ep.status === 'Doing');
         if (doingEp) {
           nextSeason = doingEp.season;
           nextEpisode = doingEp.episode;
+          nextHour = doingEp.hour ?? 0;
+          nextMinute = doingEp.minute ?? 0;
         } else {
           const nextToDo =
             updatedEpisodes.find(
@@ -223,23 +312,36 @@ export function MovieCard({
           if (nextToDo) {
             nextSeason = nextToDo.season;
             nextEpisode = nextToDo.episode;
+            nextHour = null;
+            nextMinute = null;
           } else {
             const lastEp = updatedEpisodes[updatedEpisodes.length - 1];
             if (lastEp) {
               nextSeason = lastEp.season;
               nextEpisode = lastEp.episode;
+              nextHour = null;
+              nextMinute = null;
             }
           }
         }
+      } else if (newEpStatus === 'Doing') {
+        nextSeason = targetSeason;
+        nextEpisode = targetEpisode;
+        nextHour = Math.max(0, Math.min(99, parseInt(rawHour) || 0));
+        nextMinute = Math.max(0, Math.min(59, parseInt(rawMinute) || 0));
       } else {
         nextSeason = targetSeason;
         nextEpisode = targetEpisode;
+        nextHour = null;
+        nextMinute = null;
       }
 
       await onUpdateMovie(movie.id, {
         status: overallStatus,
         currentSeason: nextSeason,
         currentEpisode: nextEpisode,
+        currentHour: nextHour,
+        currentMinute: nextMinute,
         seriesProgress: JSON.stringify(updatedEpisodes),
       });
     } finally {
@@ -329,10 +431,10 @@ export function MovieCard({
         </div>
 
         <div>
-          {/* Series Progress on Card: ONLY S1 E1 (or current episode) and 3 buttons To do, Doing, Done */}
+          {/* Series Progress on Card: ONLY S1 E1 and 3 buttons To do, Doing, Done + Hour/Minute when Doing */}
           {movie.mediaType === 'SERIES' && activeSeriesEpisode && (
             <div
-              className="mt-2.5 flex items-center justify-between rounded-lg border border-purple-500/25 bg-purple-950/25 px-2.5 py-1.5 text-xs cursor-default"
+              className="mt-2.5 rounded-lg border border-purple-500/25 bg-purple-950/25 px-2.5 py-1.5 text-xs cursor-default"
               onClick={(e) => {
                 e.stopPropagation();
               }}
@@ -340,76 +442,123 @@ export function MovieCard({
               onMouseUp={(e) => e.stopPropagation()}
               onPointerDown={(e) => e.stopPropagation()}
             >
-              {/* 1. Episode badge: e.g. S1 E1 or S1 E2 */}
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setIsSeriesModalOpen(true);
-                }}
-                title="Click to view/manage all episodes"
-                className="rounded bg-purple-500/30 px-2.5 py-1 text-xs font-bold text-purple-200 border border-purple-500/40 hover:bg-purple-500/50 transition-colors tracking-wide"
-              >
-                S{activeSeriesEpisode.season} E{activeSeriesEpisode.episode}
-              </button>
+              {/* Row 1: Episode badge and 3 status buttons */}
+              <div className="flex items-center justify-between gap-2">
+                {/* 1. Episode badge: e.g. S1 E1 or S1 E2 */}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsSeriesModalOpen(true);
+                  }}
+                  title="Click to view/manage all episodes"
+                  className="rounded bg-purple-500/30 px-2.5 py-1 text-xs font-bold text-purple-200 border border-purple-500/40 hover:bg-purple-500/50 transition-colors tracking-wide shrink-0"
+                >
+                  S{activeSeriesEpisode.season} E{activeSeriesEpisode.episode}
+                </button>
 
-              {/* 2. Three status buttons: To do, Doing, Done */}
-              <div className="flex items-center gap-1 rounded-lg bg-black/40 p-0.5 border border-purple-500/20">
-                {(
-                  [
-                    {
-                      id: 'To do',
-                      label: 'To do',
-                      dot: 'bg-yellow-400',
-                      activeClass:
-                        'bg-yellow-500/25 text-yellow-300 border-yellow-500/40 font-bold shadow-sm',
-                    },
-                    {
-                      id: 'Doing',
-                      label: 'Doing',
-                      dot: 'bg-blue-400',
-                      activeClass:
-                        'bg-sky-500/25 text-sky-300 border-sky-500/40 font-bold shadow-sm',
-                    },
-                    {
-                      id: 'Done',
-                      label: 'Done',
-                      dot: 'bg-green-400',
-                      activeClass:
-                        'bg-emerald-500/25 text-emerald-300 border-emerald-500/40 font-bold shadow-sm',
-                    },
-                  ] as const
-                ).map((btn) => {
-                  const isSelected = activeSeriesEpisode.status === btn.id;
-                  return (
-                    <button
-                      key={btn.id}
-                      type="button"
-                      disabled={isUpdatingProgress}
-                      onClick={(e) =>
-                        handleEpisodeStatusChange(
-                          e,
-                          activeSeriesEpisode.season,
-                          activeSeriesEpisode.episode,
-                          btn.id,
-                        )
-                      }
-                      className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] transition-all border ${
-                        isSelected
-                          ? btn.activeClass
-                          : 'border-transparent text-neutral-400 hover:text-white hover:bg-neutral-800/50'
-                      } disabled:opacity-50`}
-                    >
-                      <span
-                        className={`h-1.5 w-1.5 rounded-full ${btn.dot} ${
-                          isSelected ? 'ring-1 ring-current' : 'opacity-60'
-                        }`}
-                      />
-                      <span>{btn.label}</span>
-                    </button>
-                  );
-                })}
+                {/* 2. Three status buttons: To do, Doing, Done */}
+                <div className="flex items-center gap-1 rounded-lg bg-black/40 p-0.5 border border-purple-500/20">
+                  {(
+                    [
+                      {
+                        id: 'To do',
+                        label: 'To do',
+                        dot: 'bg-yellow-400',
+                        activeClass:
+                          'bg-yellow-500/25 text-yellow-300 border-yellow-500/40 font-bold shadow-sm',
+                      },
+                      {
+                        id: 'Doing',
+                        label: 'Doing',
+                        dot: 'bg-blue-400',
+                        activeClass:
+                          'bg-sky-500/25 text-sky-300 border-sky-500/40 font-bold shadow-sm',
+                      },
+                      {
+                        id: 'Done',
+                        label: 'Done',
+                        dot: 'bg-green-400',
+                        activeClass:
+                          'bg-emerald-500/25 text-emerald-300 border-emerald-500/40 font-bold shadow-sm',
+                      },
+                    ] as const
+                  ).map((btn) => {
+                    const isSelected = activeSeriesEpisode.status === btn.id;
+                    return (
+                      <button
+                        key={btn.id}
+                        type="button"
+                        disabled={isUpdatingProgress}
+                        onClick={(e) =>
+                          handleEpisodeStatusChange(
+                            e,
+                            activeSeriesEpisode.season,
+                            activeSeriesEpisode.episode,
+                            btn.id,
+                          )
+                        }
+                        className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] transition-all border ${
+                          isSelected
+                            ? btn.activeClass
+                            : 'border-transparent text-neutral-400 hover:text-white hover:bg-neutral-800/50'
+                        } disabled:opacity-50`}
+                      >
+                        <span
+                          className={`h-1.5 w-1.5 rounded-full ${btn.dot} ${
+                            isSelected ? 'ring-1 ring-current' : 'opacity-60'
+                          }`}
+                        />
+                        <span>{btn.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
+
+              {/* Row 2: Input hour and minute if episode status is Doing */}
+              {activeSeriesEpisode.status === 'Doing' && (
+                <div
+                  className="mt-2 pt-2 border-t border-purple-500/20 flex items-center justify-between gap-2"
+                  onClick={(e) => e.stopPropagation()}
+                  onMouseDown={(e) => e.stopPropagation()}
+                >
+                  <div className="flex items-center gap-1.5 text-[11px] text-sky-300 font-medium">
+                    <Clock className="h-3 w-3 text-sky-400 shrink-0" />
+                    <span>Watch Time:</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1">
+                      <input
+                        type="number"
+                        min={0}
+                        max={99}
+                        value={rawHour}
+                        onChange={handleHourChange}
+                        onBlur={handleHourBlur}
+                        onClick={(e) => e.stopPropagation()}
+                        onMouseDown={(e) => e.stopPropagation()}
+                        className="w-11 rounded border border-neutral-700 bg-black/60 px-1 py-0.5 text-center font-mono text-xs text-white focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500/30"
+                      />
+                      <span className="text-[11px] font-medium text-neutral-400">h</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <input
+                        type="number"
+                        min={0}
+                        max={59}
+                        value={rawMinute}
+                        onChange={handleMinuteChange}
+                        onBlur={handleMinuteBlur}
+                        onClick={(e) => e.stopPropagation()}
+                        onMouseDown={(e) => e.stopPropagation()}
+                        className="w-11 rounded border border-neutral-700 bg-black/60 px-1 py-0.5 text-center font-mono text-xs text-white focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500/30"
+                      />
+                      <span className="text-[11px] font-medium text-neutral-400">m</span>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
