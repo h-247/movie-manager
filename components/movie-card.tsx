@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ExternalLink, Star, Film, ChevronDown, Check, Globe, Edit2, X } from 'lucide-react';
+import { ExternalLink, Star, Film, Check, Globe, Edit2, X } from 'lucide-react';
 import type { Movie, WatchStatus } from '@/db/schema';
 import { StatusBadge } from './status-badge';
 import { getFullPosterUrl } from '@/lib/tmdb';
@@ -37,7 +37,6 @@ export function MovieCard({
 }: MovieCardProps) {
   const [imageError, setImageError] = useState(false);
   const [isChangingStatus, setIsChangingStatus] = useState(false);
-  const [showStatusMenu, setShowStatusMenu] = useState(false);
 
   // Series progress edit state on card
   const [isSeriesModalOpen, setIsSeriesModalOpen] = useState(false);
@@ -149,7 +148,6 @@ export function MovieCard({
     newStatus: WatchStatus,
   ) => {
     e.stopPropagation();
-    setShowStatusMenu(false);
     if (newStatus === movie.status || isChangingStatus) return;
 
     try {
@@ -166,9 +164,9 @@ export function MovieCard({
       className="group relative flex flex-col justify-between rounded-2xl border border-neutral-800 bg-[#262626] p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-neutral-700 hover:shadow-xl hover:shadow-black/50 cursor-pointer"
     >
       <div>
-        {/* Card Header Row: Status, Type, Rating, IMDb Link */}
+        {/* Card Header Row: Status, Type, Canada, 2026, Rating, IMDb Link */}
         <div className="flex items-center justify-between gap-2 pb-2.5 mb-2.5 border-b border-neutral-800/80">
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 flex-wrap">
             <StatusBadge status={movie.status as WatchStatus} size="sm" />
             <span
               className={`rounded px-1.5 py-0.5 text-[10px] font-semibold border ${
@@ -179,9 +177,24 @@ export function MovieCard({
             >
               {movie.mediaType === 'SERIES' ? 'Series' : 'Movie'}
             </span>
+
+            {/* Canada next to Series */}
+            {countriesList.length > 0 && (
+              <span className="flex items-center gap-1 rounded bg-[#1A1A1A] border border-neutral-700/60 px-1.5 py-0.5 text-[10px] font-medium text-neutral-300">
+                <Globe className="h-2.5 w-2.5 text-cyan-400 shrink-0" />
+                <span>{countriesList.join(', ')}</span>
+              </span>
+            )}
+
+            {/* 2026 next to Series */}
+            {movie.releaseYear && (
+              <span className="rounded bg-[#1A1A1A] border border-neutral-700/60 px-1.5 py-0.5 text-[10px] font-medium text-neutral-300">
+                {movie.releaseYear}
+              </span>
+            )}
           </div>
 
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 shrink-0">
             {movie.personalRating && (
               <div className="flex items-center gap-1 rounded-md bg-[#1A1A1A] px-1.5 py-0.5 text-xs font-semibold text-amber-400 border border-neutral-800">
                 <Star className="h-3 w-3 fill-amber-400" />
@@ -210,27 +223,12 @@ export function MovieCard({
             >
               {movie.title}
             </h3>
-            <div className="flex items-center gap-1.5 shrink-0 pt-0.5">
-              {movie.mediaType === 'SERIES' && (
-                <span className="rounded bg-purple-500/20 px-1.5 py-0.5 text-[10px] font-semibold text-purple-300 border border-purple-500/30">
-                  S{movie.currentSeason || 1} E{movie.currentEpisode || 1}
-                </span>
-              )}
-              {movie.releaseYear && (
-                <span className="shrink-0 text-xs font-medium text-neutral-400">
-                  {movie.releaseYear}
-                </span>
-              )}
-            </div>
+            {movie.mediaType === 'SERIES' && (
+              <span className="shrink-0 pt-0.5 rounded bg-purple-500/20 px-1.5 py-0.5 text-[10px] font-semibold text-purple-300 border border-purple-500/30">
+                S{movie.currentSeason || 1} E{movie.currentEpisode || 1}
+              </span>
+            )}
           </div>
-
-          {/* Production Country - Only name of country */}
-          {countriesList.length > 0 && (
-            <div className="mt-1 flex items-center gap-1 text-[11px] text-neutral-300">
-              <Globe className="h-3 w-3 text-cyan-400 shrink-0" />
-              <span className="truncate font-medium">{countriesList.join(', ')}</span>
-            </div>
-          )}
 
           {/* Series Progress on Card (Editable) */}
           {movie.mediaType === 'SERIES' && (() => {
@@ -441,10 +439,9 @@ export function MovieCard({
             );
           })()}
 
-          {/* Genre Tags (Updated from Main Genre to Genre) */}
+          {/* Genre Tags (without word Genre) */}
           {genresList.length > 0 && (
             <div className="mt-2.5 flex flex-wrap items-center gap-1.5 text-[11px]">
-              <span className="text-neutral-400 text-[10px] font-semibold">Genre:</span>
               {genresList.map((genre) => (
                 <span
                   key={genre}
@@ -457,77 +454,53 @@ export function MovieCard({
           )}
         </div>
 
-        {/* Quick Status Control at bottom of card */}
+        {/* Three Status Buttons: To do, Doing, Done */}
         <div className="mt-3.5 border-t border-neutral-800/80 pt-2.5">
-          <div className="relative">
-            <button
-              type="button"
-              disabled={isChangingStatus}
-              onClick={(e) => {
-                e.stopPropagation();
-                setShowStatusMenu(!showStatusMenu);
-              }}
-              className="flex w-full items-center justify-between rounded-lg bg-[#1A1A1A] px-2.5 py-1.5 text-xs text-neutral-300 border border-neutral-800 hover:border-neutral-700 hover:text-white transition-colors"
-            >
-              <span className="text-[11px] text-neutral-400">Status:</span>
-              <span className="flex items-center gap-1 font-medium text-[#ECECEC]">
-                {movie.status === 'TO_DO'
-                  ? 'To do'
-                  : movie.status === 'DOING'
-                  ? 'Doing'
-                  : 'Done'}
-                <ChevronDown className="h-3 w-3 text-neutral-500" />
-              </span>
-            </button>
-
-            {/* Quick Status Dropdown Menu */}
-            {showStatusMenu && (
-              <>
-                <div
-                  className="fixed inset-0 z-20"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShowStatusMenu(false);
-                  }}
-                />
-                <div className="absolute bottom-full left-0 right-0 z-30 mb-1 rounded-lg border border-neutral-700 bg-[#262626] p-1 shadow-xl">
-                  {(['TO_DO', 'DOING', 'DONE'] as WatchStatus[]).map((st) => {
-                    const isSelected = movie.status === st;
-                    const labels = {
-                      TO_DO: 'To do',
-                      DOING: 'Doing',
-                      DONE: 'Done',
-                    };
-                    const dotColors = {
-                      TO_DO: 'bg-yellow-400',
-                      DOING: 'bg-blue-400',
-                      DONE: 'bg-green-400',
-                    };
-
-                    return (
-                      <button
-                        key={st}
-                        type="button"
-                        onClick={(e) => handleQuickStatus(e, st)}
-                        className={`flex w-full items-center justify-between rounded px-2 py-1.5 text-xs transition-colors ${
-                          isSelected
-                            ? 'bg-neutral-800 text-white font-medium'
-                            : 'text-neutral-300 hover:bg-[#333333] hover:text-white'
-                        }`}
-                      >
-                        <span className="flex items-center gap-2">
-                          <span
-                            className={`h-2 w-2 rounded-full ${dotColors[st]}`}
-                          />
-                          {labels[st]}
-                        </span>
-                        {isSelected && <Check className="h-3 w-3 text-white" />}
-                      </button>
-                    );
-                  })}
-                </div>
-              </>
-            )}
+          <div className="grid grid-cols-3 gap-1.5 p-1 rounded-xl bg-[#1A1A1A] border border-neutral-800">
+            {(
+              [
+                {
+                  id: 'TO_DO',
+                  label: 'To do',
+                  dot: 'bg-yellow-400',
+                  activeClass: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/40 font-bold shadow-sm',
+                },
+                {
+                  id: 'DOING',
+                  label: 'Doing',
+                  dot: 'bg-blue-400',
+                  activeClass: 'bg-sky-500/20 text-sky-300 border-sky-500/40 font-bold shadow-sm',
+                },
+                {
+                  id: 'DONE',
+                  label: 'Done',
+                  dot: 'bg-green-400',
+                  activeClass: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 font-bold shadow-sm',
+                },
+              ] as const
+            ).map((item) => {
+              const isSelected = movie.status === item.id;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  disabled={isChangingStatus}
+                  onClick={(e) => handleQuickStatus(e, item.id as WatchStatus)}
+                  className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs transition-all border ${
+                    isSelected
+                      ? item.activeClass
+                      : 'border-transparent text-neutral-400 hover:text-white hover:bg-neutral-800/60'
+                  } disabled:opacity-50`}
+                >
+                  <span
+                    className={`h-1.5 w-1.5 rounded-full ${item.dot} ${
+                      isSelected ? 'ring-2 ring-current ring-opacity-30' : 'opacity-60'
+                    }`}
+                  />
+                  <span>{item.label}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>
