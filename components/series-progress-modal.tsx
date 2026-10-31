@@ -47,6 +47,18 @@ export function SeriesProgressModal({
     if (!isOpen) return;
     setError(null);
 
+    const curSeason = movie.currentSeason || 1;
+    const curEpisode = movie.currentEpisode || 1;
+    const curStatus: SeriesEpisodeStatus =
+      movie.status === 'DONE' ? 'Done' : movie.status === 'DOING' ? 'Doing' : 'To do';
+    const curHour = movie.currentHour || 0;
+    const curMin = movie.currentMinute || 0;
+
+    const totalEps = movie.totalEpisodes || null;
+    const totalSeas = movie.totalSeasons || 1;
+    const epsPerSeason = totalEps && totalSeas ? Math.ceil(totalEps / totalSeas) : null;
+    const maxSeasonEps = epsPerSeason || totalEps || 8;
+
     if (movie.seriesProgress) {
       try {
         const parsed = JSON.parse(movie.seriesProgress);
@@ -59,6 +71,24 @@ export function SeriesProgressModal({
             hour: typeof item.hour === 'number' && item.hour >= 0 ? Math.min(item.hour, 99) : 0,
             minute: typeof item.minute === 'number' && item.minute >= 0 ? Math.min(item.minute, 59) : 0,
           }));
+
+          const maxLoadedEp = Math.max(
+            ...loadedRows.filter((r) => r.season === curSeason).map((r) => r.episode),
+            0,
+          );
+          if (maxSeasonEps > maxLoadedEp) {
+            for (let ep = maxLoadedEp + 1; ep <= maxSeasonEps; ep++) {
+              loadedRows.push({
+                id: `ep-${curSeason}-${ep}`,
+                season: curSeason,
+                episode: ep,
+                status: 'To do',
+                hour: 0,
+                minute: 0,
+              });
+            }
+          }
+
           setRows(loadedRows);
           return;
         }
@@ -68,13 +98,6 @@ export function SeriesProgressModal({
     }
 
     // Default initialization when no seriesProgress is saved
-    const curSeason = movie.currentSeason || 1;
-    const curEpisode = movie.currentEpisode || 1;
-    const curStatus: SeriesEpisodeStatus =
-      movie.status === 'DONE' ? 'Done' : movie.status === 'DOING' ? 'Doing' : 'To do';
-    const curHour = movie.currentHour || 0;
-    const curMin = movie.currentMinute || 0;
-
     const initialRows: EpisodeProgressRow[] = [];
 
     // If curEpisode > 1, add previous completed episodes
@@ -99,14 +122,9 @@ export function SeriesProgressModal({
       minute: curStatus === 'Doing' ? curMin : 0,
     });
 
-    // If totalEpisodes is known and > curEpisode, add remaining as To do
-    const totalEps = movie.totalEpisodes || null;
-    const totalSeas = movie.totalSeasons || 1;
-    const epsPerSeason = totalEps && totalSeas ? Math.ceil(totalEps / totalSeas) : null;
-    const maxSeasonEps = epsPerSeason || totalEps || 0;
-
+    // Populate all remaining episodes of the season up to maxSeasonEps (e.g. all 8 episodes of Season 1)
     if (maxSeasonEps > curEpisode) {
-      for (let ep = curEpisode + 1; ep <= Math.min(maxSeasonEps, curEpisode + 5); ep++) {
+      for (let ep = curEpisode + 1; ep <= maxSeasonEps; ep++) {
         initialRows.push({
           id: `ep-${curSeason}-${ep}`,
           season: curSeason,
@@ -190,7 +208,10 @@ export function SeriesProgressModal({
 
   const handleQuickPopulate = () => {
     const curSeason = rows[0]?.season || movie.currentSeason || 1;
-    const targetCount = movie.totalEpisodes ? Math.min(movie.totalEpisodes, 24) : 10;
+    const totalEps = movie.totalEpisodes || null;
+    const totalSeas = movie.totalSeasons || 1;
+    const epsPerSeason = totalEps && totalSeas ? Math.ceil(totalEps / totalSeas) : null;
+    const targetCount = epsPerSeason || totalEps || 8;
     const populated: EpisodeProgressRow[] = [];
 
     for (let ep = 1; ep <= targetCount; ep++) {
