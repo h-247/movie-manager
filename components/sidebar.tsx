@@ -145,7 +145,7 @@ export function Sidebar({
             <button
               type="button"
               onClick={onToggle}
-              title="Open sidebar"
+              title="Open sidebar (Ctrl+Shift+A)"
               className="flex h-9 w-9 items-center justify-center rounded-lg text-neutral-400 hover:bg-[#262626] hover:text-white transition-colors"
             >
               <PanelLeft className="h-5 w-5" />
@@ -155,7 +155,7 @@ export function Sidebar({
             <button
               type="button"
               onClick={onOpenImport}
-              title="Import Title"
+              title="Import Title (Ctrl+Shift+Z)"
               className="flex h-9 w-9 items-center justify-center rounded-lg text-neutral-400 hover:bg-[#262626] hover:text-white transition-colors"
             >
               <Plus className="h-4.5 w-4.5" />
@@ -254,7 +254,7 @@ export function Sidebar({
               <button
                 type="button"
                 onClick={onToggle}
-                title="Close sidebar"
+                title="Close sidebar (Ctrl+Shift+A)"
                 className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-800 hover:text-white transition-colors"
               >
                 <PanelLeftClose className="h-4.5 w-4.5" />
@@ -267,6 +267,7 @@ export function Sidebar({
               <button
                 type="button"
                 onClick={onOpenImport}
+                title="Import Title (Ctrl+Shift+Z)"
                 className="flex w-full items-center justify-center gap-2 rounded-xl bg-white px-3.5 py-2 text-xs font-semibold text-black shadow-sm hover:bg-neutral-200 transition-colors"
               >
                 <Plus className="h-4 w-4" />

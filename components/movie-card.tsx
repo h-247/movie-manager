@@ -374,10 +374,10 @@ export function MovieCard({
       <div>
         {/* Top row: Title, Series, Country, Year, and IMDb Link */}
         <div className="flex items-center justify-between gap-2 pb-2.5 mb-2.5 border-b border-neutral-800/80">
-          <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+          <div className="flex items-center gap-1.5 min-w-0 flex-1 overflow-hidden">
             {/* 1. Title */}
             <h3
-              className="text-base font-bold text-white group-hover:text-purple-300 leading-snug transition-colors truncate"
+              className="text-base font-bold text-white group-hover:text-purple-300 leading-snug transition-colors truncate min-w-0 shrink"
               title={movie.title}
             >
               {movie.title}
@@ -385,7 +385,7 @@ export function MovieCard({
 
             {/* 2. Series (or Movie) */}
             <span
-              className={`rounded px-1.5 py-0.5 text-[10px] font-semibold border ${
+              className={`rounded px-1.5 py-0.5 text-[10px] font-semibold border shrink-0 whitespace-nowrap ${
                 movie.mediaType === 'SERIES'
                   ? 'bg-purple-500/20 text-purple-300 border-purple-500/30'
                   : 'bg-blue-500/20 text-blue-300 border-blue-500/30'
@@ -396,7 +396,7 @@ export function MovieCard({
 
             {/* 3. Country */}
             {countriesList.length > 0 && (
-              <span className="flex items-center gap-1 rounded bg-[#1A1A1A] border border-neutral-700/60 px-1.5 py-0.5 text-[10px] font-medium text-neutral-300">
+              <span className="flex items-center gap-1 rounded bg-[#1A1A1A] border border-neutral-700/60 px-1.5 py-0.5 text-[10px] font-medium text-neutral-300 shrink-0 whitespace-nowrap">
                 <Globe className="h-2.5 w-2.5 text-cyan-400 shrink-0" />
                 <span>{countriesList.join(', ')}</span>
               </span>
@@ -404,7 +404,7 @@ export function MovieCard({
 
             {/* 4. Year */}
             {movie.releaseYear && (
-              <span className="rounded bg-[#1A1A1A] border border-neutral-700/60 px-1.5 py-0.5 text-[10px] font-medium text-neutral-300">
+              <span className="rounded bg-[#1A1A1A] border border-neutral-700/60 px-1.5 py-0.5 text-[10px] font-medium text-neutral-300 shrink-0 whitespace-nowrap">
                 {movie.releaseYear}
               </span>
             )}
@@ -443,7 +443,7 @@ export function MovieCard({
               onPointerDown={(e) => e.stopPropagation()}
             >
               {/* Row 1: Episode badge and 3 status buttons */}
-              <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center justify-between gap-1.5 sm:gap-2">
                 {/* 1. Episode badge: e.g. S1 E1 or S1 E2 */}
                 <button
                   type="button"
@@ -452,13 +452,13 @@ export function MovieCard({
                     setIsSeriesModalOpen(true);
                   }}
                   title="Click to view/manage all episodes"
-                  className="rounded bg-purple-500/30 px-2.5 py-1 text-xs font-bold text-purple-200 border border-purple-500/40 hover:bg-purple-500/50 transition-colors tracking-wide shrink-0"
+                  className="rounded bg-purple-500/30 px-2 sm:px-2.5 py-1 text-xs font-bold text-purple-200 border border-purple-500/40 hover:bg-purple-500/50 transition-colors tracking-wide shrink-0 whitespace-nowrap"
                 >
                   S{activeSeriesEpisode.season} E{activeSeriesEpisode.episode}
                 </button>
 
                 {/* 2. Three status buttons: To do, Doing, Done */}
-                <div className="flex items-center gap-1 rounded-lg bg-black/40 p-0.5 border border-purple-500/20">
+                <div className="flex items-center gap-0.5 sm:gap-1 rounded-lg bg-black/40 p-0.5 border border-purple-500/20 shrink-0">
                   {(
                     [
                       {
@@ -498,18 +498,18 @@ export function MovieCard({
                             btn.id,
                           )
                         }
-                        className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] transition-all border ${
+                        className={`flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-md text-[11px] whitespace-nowrap shrink-0 transition-all border ${
                           isSelected
                             ? btn.activeClass
                             : 'border-transparent text-neutral-400 hover:text-white hover:bg-neutral-800/50'
                         } disabled:opacity-50`}
                       >
                         <span
-                          className={`h-1.5 w-1.5 rounded-full ${btn.dot} ${
+                          className={`h-1.5 w-1.5 rounded-full shrink-0 ${btn.dot} ${
                             isSelected ? 'ring-1 ring-current' : 'opacity-60'
                           }`}
                         />
-                        <span>{btn.label}</span>
+                        <span className="whitespace-nowrap">{btn.label}</span>
                       </button>
                     );
                   })}

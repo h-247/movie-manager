@@ -56,33 +56,38 @@ export default function HomePage() {
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
   const [movieToDelete, setMovieToDelete] = useState<Movie | null>(null);
 
-  // Global shortcut Ctrl+Shift to open Import Title modal
+  // Global shortcuts:
+  // - Ctrl+Shift+Z: Open Import Title modal
+  // - Ctrl+Shift+A: Toggle sidebar
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      const target = e.target as HTMLElement;
-      if (
-        target &&
-        (target.tagName === 'INPUT' ||
-          target.tagName === 'TEXTAREA' ||
-          target.isContentEditable)
-      ) {
+      const isCtrlOrMeta = e.ctrlKey || e.metaKey;
+      if (!isCtrlOrMeta || !e.shiftKey) return;
+
+      const key = e.key.toLowerCase();
+      const code = e.code;
+
+      // 1. Ctrl+Shift+A: Toggle sidebar
+      if (key === 'a' || code === 'KeyA') {
+        e.preventDefault();
+        setIsSidebarOpen((prev) => !prev);
         return;
       }
 
-      if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
-        const key = e.key.toLowerCase();
-        if (
-          e.key === 'Shift' ||
-          e.key === 'Control' ||
-          e.code.startsWith('Shift') ||
-          e.code.startsWith('Control') ||
-          key === 'i' ||
-          key === 'o' ||
-          key === 'm'
-        ) {
+      // 2. Ctrl+Shift+Z: Open Import Title modal (unless focused in a text input)
+      if (key === 'z' || code === 'KeyZ') {
+        const target = e.target as HTMLElement;
+        const isTextInput =
+          target &&
+          (target.tagName === 'INPUT' ||
+            target.tagName === 'TEXTAREA' ||
+            target.isContentEditable);
+
+        if (!isTextInput) {
           e.preventDefault();
           setIsImportOpen(true);
         }
+        return;
       }
     };
 
@@ -299,7 +304,7 @@ export default function HomePage() {
         <button
           type="button"
           onClick={() => setIsSidebarOpen((prev) => !prev)}
-          title={isSidebarOpen ? 'Close sidebar' : 'Open sidebar'}
+          title={isSidebarOpen ? 'Close sidebar (Ctrl+Shift+A)' : 'Open sidebar (Ctrl+Shift+A)'}
           className="md:hidden fixed top-3 left-3 z-30 flex h-9 w-9 items-center justify-center rounded-xl border border-neutral-800 bg-[#262626]/90 backdrop-blur-sm text-neutral-300 shadow-lg hover:text-white transition-colors"
         >
           <PanelLeft className="h-4 w-4" />
@@ -310,7 +315,7 @@ export default function HomePage() {
           <section aria-label="Movie collection">
             {isLoading && movies.length === 0 ? (
               /* Skeleton Loading Grid without photo */
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 sm:gap-5">
                 {[...Array(8)].map((_, i) => (
                   <div
                     key={i}
@@ -330,7 +335,7 @@ export default function HomePage() {
               </div>
             ) : movies.length > 0 ? (
               /* Movie Cards Grid */
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 sm:gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-5 sm:gap-6">
                 {movies.map((movie) => (
                   <MovieCard
                     key={movie.id}
