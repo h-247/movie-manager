@@ -434,7 +434,7 @@ export function MovieCard({
           {/* Series Progress on Card: ONLY S1 E1 and 3 buttons To do, Doing, Done + Hour/Minute when Doing */}
           {movie.mediaType === 'SERIES' && activeSeriesEpisode && (
             <div
-              className="mt-2.5 rounded-lg border border-purple-500/25 bg-purple-950/25 px-2.5 py-1.5 text-xs cursor-default"
+              className="mt-2.5 rounded-lg border border-purple-500/25 bg-purple-950/25 px-2.5 py-1.5 text-xs cursor-default overflow-hidden"
               onClick={(e) => {
                 e.stopPropagation();
               }}
@@ -443,7 +443,7 @@ export function MovieCard({
               onPointerDown={(e) => e.stopPropagation()}
             >
               {/* Row 1: Episode badge and 3 status buttons */}
-              <div className="flex items-center justify-between gap-1.5 sm:gap-2">
+              <div className="flex items-center justify-between gap-1.5 min-w-0">
                 {/* 1. Episode badge: e.g. S1 E1 or S1 E2 */}
                 <button
                   type="button"
@@ -452,13 +452,13 @@ export function MovieCard({
                     setIsSeriesModalOpen(true);
                   }}
                   title="Click to view/manage all episodes"
-                  className="rounded bg-purple-500/30 px-2 sm:px-2.5 py-1 text-xs font-bold text-purple-200 border border-purple-500/40 hover:bg-purple-500/50 transition-colors tracking-wide shrink-0 whitespace-nowrap"
+                  className="rounded bg-purple-500/30 px-2 py-0.5 sm:px-2.5 sm:py-1 text-[11px] sm:text-xs font-bold text-purple-200 border border-purple-500/40 hover:bg-purple-500/50 transition-colors tracking-wide shrink-0 whitespace-nowrap"
                 >
                   S{activeSeriesEpisode.season} E{activeSeriesEpisode.episode}
                 </button>
 
                 {/* 2. Three status buttons: To do, Doing, Done */}
-                <div className="flex items-center gap-0.5 sm:gap-1 rounded-lg bg-black/40 p-0.5 border border-purple-500/20 shrink-0">
+                <div className="flex items-center gap-0.5 rounded-lg bg-black/40 p-0.5 border border-purple-500/20 shrink-0">
                   {(
                     [
                       {
@@ -498,7 +498,7 @@ export function MovieCard({
                             btn.id,
                           )
                         }
-                        className={`flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-md text-[11px] whitespace-nowrap shrink-0 transition-all border ${
+                        className={`flex items-center gap-1 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md text-[10px] sm:text-[11px] whitespace-nowrap shrink-0 transition-all border ${
                           isSelected
                             ? btn.activeClass
                             : 'border-transparent text-neutral-400 hover:text-white hover:bg-neutral-800/50'
