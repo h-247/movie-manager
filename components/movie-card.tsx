@@ -372,27 +372,18 @@ export function MovieCard({
       className="group relative flex flex-col justify-between rounded-2xl border border-neutral-800 bg-[#262626] p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-neutral-700 hover:shadow-xl hover:shadow-black/50 cursor-pointer"
     >
       <div>
-        {/* Card Header: Title on line 1, Badges on line 2 (separated lines to prevent cramping) */}
-        <div className="pb-2.5 mb-2.5 border-b border-neutral-800/80">
-          {/* Line 1: Title & Optional Rating */}
-          <div className="flex items-start justify-between gap-2">
+        {/* Card Header: Title, Series/Movie badge, and Country next to each other on the same line */}
+        <div className="flex items-center justify-between gap-2 pb-2.5 mb-2.5 border-b border-neutral-800/80">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            {/* Title */}
             <h3
-              className="text-base font-bold text-white group-hover:text-purple-300 leading-snug transition-colors line-clamp-1 flex-1 min-w-0"
+              className="text-base font-bold text-white group-hover:text-purple-300 leading-snug transition-colors truncate min-w-0 shrink"
               title={movie.title}
             >
               {movie.title}
             </h3>
 
-            {movie.personalRating && (
-              <div className="flex items-center gap-1 rounded-md bg-[#1A1A1A] px-1.5 py-0.5 text-xs font-semibold text-amber-400 border border-neutral-800 shrink-0">
-                <Star className="h-3 w-3 fill-amber-400" />
-                <span>{movie.personalRating}/10</span>
-              </div>
-            )}
-          </div>
-
-          {/* Line 2: Badges (Series/Movie, Country) - Year and IMDb link removed per request */}
-          <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+            {/* Series (or Movie) */}
             <span
               className={`rounded px-1.5 py-0.5 text-[10px] font-semibold border shrink-0 whitespace-nowrap ${
                 movie.mediaType === 'SERIES'
@@ -403,6 +394,7 @@ export function MovieCard({
               {movie.mediaType === 'SERIES' ? 'Series' : 'Movie'}
             </span>
 
+            {/* Country */}
             {countriesList.length > 0 && (
               <span className="flex items-center gap-1 rounded bg-[#1A1A1A] border border-neutral-700/60 px-1.5 py-0.5 text-[10px] font-medium text-neutral-300 shrink-0 whitespace-nowrap">
                 <Globe className="h-2.5 w-2.5 text-cyan-400 shrink-0" />
@@ -410,6 +402,13 @@ export function MovieCard({
               </span>
             )}
           </div>
+
+          {movie.personalRating && (
+            <div className="flex items-center gap-1 rounded-md bg-[#1A1A1A] px-1.5 py-0.5 text-xs font-semibold text-amber-400 border border-neutral-800 shrink-0">
+              <Star className="h-3 w-3 fill-amber-400" />
+              <span>{movie.personalRating}/10</span>
+            </div>
+          )}
         </div>
 
         <div>
@@ -424,8 +423,8 @@ export function MovieCard({
               onMouseUp={(e) => e.stopPropagation()}
               onPointerDown={(e) => e.stopPropagation()}
             >
-              {/* Row 1: Episode badge and 3 status buttons */}
-              <div className="flex items-center justify-between gap-1.5 min-w-0">
+              {/* Row 1: Episode badge and 3 status buttons placed next to each other */}
+              <div className="flex items-center gap-2 min-w-0">
                 {/* 1. Episode badge: e.g. S1 E1 or S1 E2 */}
                 <button
                   type="button"

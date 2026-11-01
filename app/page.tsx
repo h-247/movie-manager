@@ -57,24 +57,23 @@ export default function HomePage() {
   const [movieToDelete, setMovieToDelete] = useState<Movie | null>(null);
 
   // Global shortcuts:
-  // - Ctrl+` (Backquote): Open Import Title modal
-  // - Ctrl+1 (Digit1): Toggle sidebar
+  // - Alt+` (Backquote): Open Import Title modal
+  // - Alt+1 (Digit1): Toggle sidebar
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      const isCtrlOrMeta = e.ctrlKey || e.metaKey;
-      if (!isCtrlOrMeta) return;
+      if (!e.altKey) return;
 
       const key = e.key;
       const code = e.code;
 
-      // 1. Ctrl+1: Toggle sidebar
+      // 1. Alt+1: Toggle sidebar
       if (key === '1' || code === 'Digit1') {
         e.preventDefault();
         setIsSidebarOpen((prev) => !prev);
         return;
       }
 
-      // 2. Ctrl+`: Open Import Title modal
+      // 2. Alt+`: Open Import Title modal
       if (key === '`' || key === '~' || code === 'Backquote') {
         e.preventDefault();
         setIsImportOpen(true);
@@ -295,7 +294,7 @@ export default function HomePage() {
         <button
           type="button"
           onClick={() => setIsSidebarOpen((prev) => !prev)}
-          title={isSidebarOpen ? 'Close sidebar (Ctrl+1)' : 'Open sidebar (Ctrl+1)'}
+          title={isSidebarOpen ? 'Close sidebar (Alt+1)' : 'Open sidebar (Alt+1)'}
           className="md:hidden fixed top-3 left-3 z-30 flex h-9 w-9 items-center justify-center rounded-xl border border-neutral-800 bg-[#262626]/90 backdrop-blur-sm text-neutral-300 shadow-lg hover:text-white transition-colors"
         >
           <PanelLeft className="h-4 w-4" />
