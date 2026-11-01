@@ -67,22 +67,29 @@ export default function HomePage() {
       const code = e.code;
 
       // 1. Alt+1: Toggle sidebar
-      if (key === '1' || code === 'Digit1') {
+      if (key === '1' || code === 'Digit1' || code === 'Numpad1') {
         e.preventDefault();
+        e.stopPropagation();
         setIsSidebarOpen((prev) => !prev);
         return;
       }
 
       // 2. Alt+`: Open Import Title modal
-      if (key === '`' || key === '~' || code === 'Backquote') {
+      if (
+        key === '`' ||
+        key === '~' ||
+        code === 'Backquote' ||
+        key === 'Dead'
+      ) {
         e.preventDefault();
+        e.stopPropagation();
         setIsImportOpen(true);
         return;
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener('keydown', handleKeyDown, true);
+    return () => window.removeEventListener('keydown', handleKeyDown, true);
   }, []);
 
   const showToast = (type: 'success' | 'error', text: string) => {
