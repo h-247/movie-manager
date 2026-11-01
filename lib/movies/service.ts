@@ -554,6 +554,193 @@ export class MovieService {
 
     return { imported, skipped, failed };
   }
+
+  async syncSeriesWithImdb(
+    id: string,
+    userId: string,
+  ): Promise<{
+    movie: Movie;
+    hasNewSeasons: boolean;
+    newSeasonsCount: number;
+    newEpisodesCount: number;
+    updated: boolean;
+  }> {
+    const movie = await this.getMovieById(id, userId);
+    if (!movie) {
+      const err = new Error('Movie or series not found');
+      (err as any).code = 'NOT_FOUND';
+      throw err;
+    }
+
+    if (movie.mediaType !== 'SERIES') {
+      throw new Error('Only series can be synced with IMDb for seasons and episodes.');
+    }
+
+    const imdbInfo = await checkImdbTitleType(movie.imdbId);
+    if (!imdbInfo || !imdbInfo.isKnown) {
+      throw new Error('Could not retrieve latest data from IMDb.');
+    }
+
+    const oldTotalSeasons = movie.totalSeasons || 0;
+    const oldTotalEpisodes = movie.totalEpisodes || 0;
+    const newTotalSeasons = Math.max(oldTotalSeasons, imdbInfo.totalSeasons || oldTotalSeasons);
+    const newTotalEpisodes = Math.max(oldTotalEpisodes, imdbInfo.totalEpisodes || oldTotalEpisodes);
+
+    const hasNewSeasons = newTotalSeasons > oldTotalSeasons;
+
+    // Parse current series progress
+    let currentRows: Array<{
+      id: string;
+      season: number;
+      episode: number;
+      status: 'To do' | 'Doing' | 'Done';
+      hour: number;
+      minute: number;
+    }> = [];
+
+    if (movie.seriesProgress) {
+      try {
+        currentRows = JSON.parse(movie.seriesProgress);
+      } catch {
+        currentRows = [];
+      }
+    }
+
+    const initialLength = currentRows.length;
+
+    // Merge episodes from IMDb
+    if (imdbInfo.episodesList && imdbInfo.episodesList.length > 0) {
+      for (const ep of imdbInfo.episodesList) {
+        const exists = currentRows.some(
+          (r) => r.season === ep.season && r.episode === ep.episode,
+        );
+        if (!exists) {
+          currentRows.push({
+            id: `ep-${ep.season}-${ep.episode}`,
+            season: ep.season,
+            episode: ep.episode,
+            status: 'To do',
+            hour: 0,
+            minute: 0,
+          });
+        }
+      }
+    } else if (newTotalSeasons > 0) {
+      const epsPerSeason =
+        newTotalEpisodes && newTotalSeasons
+          ? Math.ceil(newTotalEpisodes / newTotalSeasons)
+          : 8;
+      for (let s = 1; s <= newTotalSeasons; s++) {
+        for (let ep = 1; ep <= epsPerSeason; ep++) {
+          const exists = currentRows.some(
+            (r) => r.season === s && r.episode === ep,
+          );
+          if (!exists) {
+            currentRows.push({
+              id: `ep-${s}-${ep}`,
+              season: s,
+              episode: ep,
+              status: 'To do',
+              hour: 0,
+              minute: 0,
+            });
+          }
+        }
+      }
+    }
+
+    currentRows.sort((a, b) =>
+      a.season !== b.season ? a.season - b.season : a.episode - b.episode,
+    );
+
+    const newEpisodesCount = Math.max(0, currentRows.length - initialLength);
+    const hasNewEpisodes = newEpisodesCount > 0;
+    const isUpdated = hasNewSeasons || hasNewEpisodes;
+
+    if (isUpdated) {
+      const nowIso = new Date().toISOString();
+      await this.db
+        .update(movies)
+        .set({
+          totalSeasons: newTotalSeasons,
+          totalEpisodes: Math.max(newTotalEpisodes, currentRows.length),
+          seriesProgress: JSON.stringify(currentRows),
+          updatedAt: nowIso,
+        })
+        .where(and(eq(movies.id, id), eq(movies.userId, userId)));
+
+      const updatedMovie = await this.getMovieById(id, userId);
+      return {
+        movie: updatedMovie!,
+        hasNewSeasons,
+        newSeasonsCount: hasNewSeasons ? newTotalSeasons - oldTotalSeasons : 0,
+        newEpisodesCount,
+        updated: true,
+      };
+    }
+
+    return {
+      movie,
+      hasNewSeasons: false,
+      newSeasonsCount: 0,
+      newEpisodesCount: 0,
+      updated: false,
+    };
+  }
+
+  async syncAllSeriesWithImdb(userId: string): Promise<{
+    totalSeriesChecked: number;
+    updatedCount: number;
+    newSeasonsCount: number;
+    seriesWithNewSeasons: Array<{
+      id: string;
+      title: string;
+      oldSeasons: number;
+      newSeasons: number;
+    }>;
+  }> {
+    const allSeries = await this.db
+      .select()
+      .from(movies)
+      .where(and(eq(movies.userId, userId), eq(movies.mediaType, 'SERIES')));
+
+    let updatedCount = 0;
+    let newSeasonsCount = 0;
+    const seriesWithNewSeasons: Array<{
+      id: string;
+      title: string;
+      oldSeasons: number;
+      newSeasons: number;
+    }> = [];
+
+    for (const s of allSeries) {
+      try {
+        const oldSeas = s.totalSeasons || 0;
+        const result = await this.syncSeriesWithImdb(s.id, userId);
+        if (result.updated) {
+          updatedCount++;
+        }
+        if (result.hasNewSeasons) {
+          newSeasonsCount++;
+          seriesWithNewSeasons.push({
+            id: s.id,
+            title: s.title,
+            oldSeasons: oldSeas,
+            newSeasons: result.movie.totalSeasons || oldSeas,
+          });
+        }
+      } catch {
+        // continue syncing remaining series
+      }
+    }
+
+    return {
+      totalSeriesChecked: allSeries.length,
+      updatedCount,
+      newSeasonsCount,
+      seriesWithNewSeasons,
+    };
+  }
 }
 
 export const movieService = new MovieService();

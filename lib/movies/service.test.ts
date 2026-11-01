@@ -287,4 +287,97 @@ describe('MovieService Logic & Transitions', () => {
       { name: 'Sci-Fi', count: 2 },
     ]);
   });
+
+  it('syncSeriesWithImdb throws error if movie is not a series', async () => {
+    const movie: Movie = {
+      id: 'm1',
+      userId: 'user-1',
+      imdbId: 'tt0111161',
+      imdbUrl: 'https://www.imdb.com/title/tt0111161/',
+      tmdbId: null,
+      title: 'The Shawshank Redemption',
+      originalTitle: null,
+      mediaType: 'MOVIE',
+      releaseDate: null,
+      releaseYear: 1994,
+      posterPath: null,
+      overview: null,
+      runtimeMinutes: 142,
+      totalSeasons: null,
+      totalEpisodes: null,
+      currentSeason: null,
+      currentEpisode: null,
+      currentHour: null,
+      currentMinute: null,
+      seriesProgress: null,
+      genres: null,
+      countries: null,
+      status: 'TO_DO',
+      personalRating: null,
+      notes: null,
+      startedAt: null,
+      completedAt: null,
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+    };
+
+    service.getMovieById = async () => movie;
+
+    await expect(
+      service.syncSeriesWithImdb('m1', 'user-1'),
+    ).rejects.toThrow('Only series can be synced with IMDb');
+  });
+
+  it('syncSeriesWithImdb detects new seasons and updates episodes', async () => {
+    const currentSeries: Movie = {
+      id: 's1',
+      userId: 'user-1',
+      imdbId: 'tt2442560',
+      imdbUrl: 'https://www.imdb.com/title/tt2442560/',
+      tmdbId: null,
+      title: 'Peaky Blinders',
+      originalTitle: null,
+      mediaType: 'SERIES',
+      releaseDate: '2013-09-12',
+      releaseYear: 2013,
+      posterPath: null,
+      overview: null,
+      runtimeMinutes: 60,
+      totalSeasons: 5, // currently only 5 seasons recorded
+      totalEpisodes: 30,
+      currentSeason: 1,
+      currentEpisode: 1,
+      currentHour: 0,
+      currentMinute: 0,
+      seriesProgress: JSON.stringify([
+        { id: 'ep-1-1', season: 1, episode: 1, status: 'Done', hour: 0, minute: 0 },
+      ]),
+      genres: null,
+      countries: null,
+      status: 'DOING',
+      personalRating: null,
+      notes: null,
+      startedAt: null,
+      completedAt: null,
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+    };
+
+    inMemoryMovies = [currentSeries];
+    service.getMovieById = async () => inMemoryMovies[0];
+
+    // Mock checkImdbTitleType to return 6 seasons (e.g., season 6 released)
+    const result = await service.syncSeriesWithImdb('s1', 'user-1');
+
+    expect(result.updated).toBe(true);
+    expect(result.hasNewSeasons).toBe(true);
+    expect(result.newSeasonsCount).toBeGreaterThanOrEqual(1);
+    expect(result.movie.totalSeasons).toBeGreaterThanOrEqual(6);
+    expect(result.movie.seriesProgress).toBeDefined();
+
+    // Verify existing progress was preserved
+    const parsedRows = JSON.parse(result.movie.seriesProgress!);
+    const ep1 = parsedRows.find((r: any) => r.season === 1 && r.episode === 1);
+    expect(ep1.status).toBe('Done');
+  });
 });

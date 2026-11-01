@@ -88,6 +88,7 @@ export interface ImdbTitleInfo {
   totalEpisodes?: number | null;
   genres?: string[];
   countries?: string[];
+  episodesList?: Array<{ season: number; episode: number; title?: string }>;
 }
 
 export async function checkImdbTitleType(imdbId: string): Promise<ImdbTitleInfo> {
@@ -167,6 +168,7 @@ export async function checkImdbTitleType(imdbId: string): Promise<ImdbTitleInfo>
         const edges = t.episodes?.episodes?.edges || [];
         let totalEpisodes: number | null = null;
         let totalSeasons: number | null = null;
+        const episodesList: Array<{ season: number; episode: number; title?: string }> = [];
 
         if (Array.isArray(edges) && edges.length > 0) {
           // Filter out placeholder / unannounced dummy episodes that have not aired and have no real details
@@ -195,14 +197,25 @@ export async function checkImdbTitleType(imdbId: string): Promise<ImdbTitleInfo>
 
           totalEpisodes = validEdges.length;
 
-          // Compute unique seasons that actually contain valid episodes
+          // Compute unique seasons and valid episodes list
           const validSeasons = new Set<number>();
           validEdges.forEach((e: any) => {
             const sNum = e?.node?.series?.episodeNumber?.seasonNumber;
+            const epNum = e?.node?.series?.episodeNumber?.episodeNumber;
             if (typeof sNum === 'number' && sNum > 0) {
               validSeasons.add(sNum);
+              if (typeof epNum === 'number' && epNum > 0) {
+                episodesList.push({
+                  season: sNum,
+                  episode: epNum,
+                  title: e?.node?.titleText?.text?.trim(),
+                });
+              }
             }
           });
+          episodesList.sort((a, b) =>
+            a.season !== b.season ? a.season - b.season : a.episode - b.episode,
+          );
 
           if (validSeasons.size > 0) {
             totalSeasons = validSeasons.size;
@@ -250,6 +263,7 @@ export async function checkImdbTitleType(imdbId: string): Promise<ImdbTitleInfo>
           totalEpisodes,
           genres,
           countries,
+          episodesList: episodesList.length > 0 ? episodesList : undefined,
         };
       }
     }

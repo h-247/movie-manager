@@ -19,9 +19,11 @@ import { ImportDialog } from '@/components/import-dialog';
 import { DeleteConfirmDialog } from '@/components/delete-confirm-dialog';
 import { AboutDialog } from '@/components/about-dialog';
 import { ManageGenresModal } from '@/components/manage-genres-modal';
+import { sendPushNotification, requestNotificationPermission } from '@/lib/push-notifications';
 
 export default function HomePage() {
   const [movies, setMovies] = useState<Movie[]>([]);
+  const [isSyncingAll, setIsSyncingAll] = useState(false);
   const [stats, setStats] = useState({
     total: 0,
     todo: 0,
@@ -254,6 +256,49 @@ export default function HomePage() {
     setSortBy('added_desc');
   };
 
+  const handleSyncAllSeries = async () => {
+    setIsSyncingAll(true);
+    await requestNotificationPermission();
+
+    try {
+      const res = await fetch('/api/movies/sync-all-series', {
+        method: 'POST',
+      });
+      const data: any = await res.json();
+
+      if (!res.ok) {
+        showToast('error', data.error || 'Failed to sync series collection');
+        return;
+      }
+
+      if (data.seriesWithNewSeasons && data.seriesWithNewSeasons.length > 0) {
+        for (const s of data.seriesWithNewSeasons) {
+          sendPushNotification(`🎬 New Season Alert: ${s.title}`, {
+            body: `Season ${s.newSeasons} is now available on IMDb!`,
+          });
+        }
+        const titles = data.seriesWithNewSeasons
+          .map((s: any) => `"${s.title}" (S${s.newSeasons})`)
+          .join(', ');
+        showToast('success', `🎉 New season detected for: ${titles}!`);
+      } else if (data.updatedCount > 0) {
+        showToast(
+          'success',
+          `Synced with IMDb: ${data.updatedCount} series updated with new episodes.`,
+        );
+      } else {
+        showToast('success', `All series are up to date with IMDb.`);
+      }
+
+      fetchMovies();
+      fetchStats();
+    } catch {
+      showToast('error', 'Network error while syncing series.');
+    } finally {
+      setIsSyncingAll(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#1E1E1E] text-[#ECECEC] flex font-sans">
       {/* Toast Notification */}
@@ -275,6 +320,8 @@ export default function HomePage() {
         onClose={() => setIsSidebarOpen(false)}
         onOpenImport={() => setIsImportOpen(true)}
         onOpenManageGenres={() => setIsManageGenresOpen(true)}
+        onSyncAllSeries={handleSyncAllSeries}
+        isSyncingAll={isSyncingAll}
         stats={stats}
         isLoadingStats={isLoading && movies.length === 0}
         search={search}

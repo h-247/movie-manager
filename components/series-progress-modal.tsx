@@ -11,8 +11,11 @@ import {
   Sparkles,
   RotateCcw,
   AlertCircle,
+  RefreshCw,
+  Bell,
 } from 'lucide-react';
 import type { Movie } from '@/db/schema';
+import { sendPushNotification, requestNotificationPermission } from '@/lib/push-notifications';
 
 export type SeriesEpisodeStatus = 'To do' | 'Doing' | 'Done';
 
@@ -41,6 +44,8 @@ export function SeriesProgressModal({
   const [rows, setRows] = useState<EpisodeProgressRow[]>([]);
   const [selectedSeasonFilter, setSelectedSeasonFilter] = useState<number | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncNotice, setSyncNotice] = useState<{ type: 'success' | 'info' | 'error'; message: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   // Initialize table rows from movie.seriesProgress or generate standard seasons & episodes
@@ -246,6 +251,66 @@ export function SeriesProgressModal({
     setRows(populated);
   };
 
+  const handleSyncWithImdb = async () => {
+    setIsSyncing(true);
+    setSyncNotice(null);
+    setError(null);
+
+    // Request browser notification permission if not yet decided
+    await requestNotificationPermission();
+
+    try {
+      const res = await fetch(`/api/movies/${movie.id}/sync-series`, {
+        method: 'POST',
+      });
+      const data: any = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to sync with IMDb');
+      }
+
+      if (data.updated && data.movie?.seriesProgress) {
+        try {
+          const updatedRows = JSON.parse(data.movie.seriesProgress);
+          setRows(updatedRows);
+        } catch {
+          // ignore parsing error
+        }
+
+        if (data.hasNewSeasons) {
+          sendPushNotification(`🎬 New Season Alert: ${movie.title}`, {
+            body: `Season ${data.movie.totalSeasons} is now available on IMDb! New episodes were added to your series progress.`,
+          });
+
+          setSyncNotice({
+            type: 'success',
+            message: `🎉 New Season Alert! Season ${data.movie.totalSeasons} detected on IMDb. Added ${data.newEpisodesCount} new episode(s).`,
+          });
+        } else {
+          setSyncNotice({
+            type: 'success',
+            message: `Synced with IMDb! Added ${data.newEpisodesCount} new episode(s).`,
+          });
+        }
+
+        await onUpdateMovie(movie.id, {
+          totalSeasons: data.movie.totalSeasons,
+          totalEpisodes: data.movie.totalEpisodes,
+          seriesProgress: data.movie.seriesProgress,
+        });
+      } else {
+        setSyncNotice({
+          type: 'info',
+          message: `Already up to date with IMDb (${data.movie?.totalSeasons || movie.totalSeasons || 1} seasons, ${data.movie?.totalEpisodes || movie.totalEpisodes || rows.length} episodes).`,
+        });
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to sync with IMDb');
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
   const handleSave = async () => {
     if (rows.length === 0) {
       setError('Please add at least one episode.');
@@ -387,6 +452,16 @@ export function SeriesProgressModal({
           <div className="flex items-center gap-2">
             <button
               type="button"
+              onClick={handleSyncWithImdb}
+              disabled={isSyncing}
+              className="flex items-center gap-1.5 rounded-lg border border-purple-500/30 bg-purple-500/10 px-2.5 py-1 text-[11px] font-semibold text-purple-300 hover:bg-purple-500/20 hover:text-white transition-all disabled:opacity-50"
+              title="Sync latest seasons and episodes with IMDb"
+            >
+              <RefreshCw className={`h-3 w-3 ${isSyncing ? 'animate-spin text-purple-400' : 'text-purple-400'}`} />
+              <span>{isSyncing ? 'Syncing...' : 'Sync with IMDb'}</span>
+            </button>
+            <button
+              type="button"
               onClick={handleQuickPopulate}
               className="flex items-center gap-1 text-[11px] font-medium text-neutral-400 hover:text-purple-300 hover:underline transition-colors"
               title="Populate standard episodes list"
@@ -396,6 +471,29 @@ export function SeriesProgressModal({
             </button>
           </div>
         </div>
+
+        {/* Sync / New Season Alert Banner */}
+        {syncNotice && (
+          <div
+            className={`mx-6 mt-3 flex items-center justify-between gap-2 rounded-xl border px-3.5 py-2.5 text-xs ${
+              syncNotice.type === 'success'
+                ? 'border-emerald-500/40 bg-emerald-950/40 text-emerald-200'
+                : 'border-sky-500/40 bg-sky-950/40 text-sky-200'
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <Bell className="h-4 w-4 shrink-0 text-amber-400 animate-bounce" />
+              <span>{syncNotice.message}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setSyncNotice(null)}
+              className="text-neutral-400 hover:text-white transition-colors"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        )}
 
         {/* Season Filter Tabs (Like IMDb tabs: 1 2 3 4 5 6) */}
         {(() => {

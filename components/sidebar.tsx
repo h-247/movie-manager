@@ -13,6 +13,7 @@ import {
   PlayCircle,
   CheckCircle2,
   Library,
+  RefreshCw,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -21,6 +22,8 @@ interface SidebarProps {
   onClose: () => void;
   onOpenImport: () => void;
   onOpenManageGenres: () => void;
+  onSyncAllSeries?: () => void;
+  isSyncingAll?: boolean;
   stats: {
     total: number;
     totalMovies?: number;
@@ -54,6 +57,8 @@ export function Sidebar({
   onClose,
   onOpenImport,
   onOpenManageGenres,
+  onSyncAllSeries,
+  isSyncingAll = false,
   stats,
   isLoadingStats = false,
   search,
@@ -195,6 +200,26 @@ export function Sidebar({
                 <Tag className="h-3.5 w-3.5 text-purple-400" />
                 <span>Genres of Movies</span>
               </button>
+
+              {/* Sync Series with IMDb Button */}
+              {onSyncAllSeries && (
+                <button
+                  type="button"
+                  onClick={onSyncAllSeries}
+                  disabled={isSyncingAll}
+                  title="Check IMDb for new seasons & episodes on all series"
+                  className="flex w-full items-center justify-center gap-2 rounded-xl border border-cyan-500/30 bg-[#222222] px-3 py-1.5 text-xs font-semibold text-cyan-300 hover:bg-[#2c2c2c] hover:text-white transition-colors disabled:opacity-50"
+                >
+                  <RefreshCw
+                    className={`h-3.5 w-3.5 text-cyan-400 ${
+                      isSyncingAll ? 'animate-spin' : ''
+                    }`}
+                  />
+                  <span>
+                    {isSyncingAll ? 'Syncing Series...' : 'Sync Series with IMDb'}
+                  </span>
+                </button>
+              )}
             </div>
 
             {/* Section: Search Input */}

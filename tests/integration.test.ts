@@ -578,4 +578,62 @@ describe('Movie Watchlist Integration Tests', () => {
     );
     expect(activeEpAllDone).toMatchObject({ season: 2, episode: 8, status: 'Done' });
   });
+
+  it('16. Syncs series with IMDb, detecting new seasons and preserving existing progress', async () => {
+    const seriesToSync: Movie = {
+      id: 'series-sync-1',
+      userId: 'user_123',
+      imdbId: 'tt2442560',
+      imdbUrl: 'https://www.imdb.com/title/tt2442560/',
+      tmdbId: null,
+      title: 'Peaky Blinders',
+      originalTitle: null,
+      mediaType: 'SERIES',
+      releaseDate: '2013-09-12',
+      releaseYear: 2013,
+      posterPath: null,
+      overview: null,
+      runtimeMinutes: 60,
+      genres: '["Crime", "Drama"]',
+      countries: '["United Kingdom"]',
+      status: 'DOING',
+      personalRating: null,
+      notes: null,
+      startedAt: null,
+      completedAt: null,
+      totalSeasons: 4, // out-of-date: only 4 seasons
+      totalEpisodes: 24,
+      currentSeason: 1,
+      currentEpisode: 1,
+      currentHour: null,
+      currentMinute: null,
+      seriesProgress: JSON.stringify([
+        { id: 'ep-1-1', season: 1, episode: 1, status: 'Done', hour: 0, minute: 0 },
+      ]),
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+    };
+
+    dbRecords = [seriesToSync];
+    service.getMovieById = vi.fn().mockImplementation((id: string) =>
+      Promise.resolve(dbRecords.find((r) => r.id === id) || null),
+    );
+
+    const syncResult = await service.syncSeriesWithImdb('series-sync-1', 'user_123');
+
+    expect(syncResult.updated).toBe(true);
+    expect(syncResult.hasNewSeasons).toBe(true);
+    expect(syncResult.newSeasonsCount).toBeGreaterThanOrEqual(1);
+    expect(syncResult.movie.totalSeasons).toBeGreaterThanOrEqual(6);
+
+    // Verify existing progress preserved: S1 E1 is still Done
+    const parsed = JSON.parse(syncResult.movie.seriesProgress!);
+    const ep1 = parsed.find((p: any) => p.season === 1 && p.episode === 1);
+    expect(ep1.status).toBe('Done');
+
+    // And new season episodes exist in 'To do' status
+    const newSeasonEp = parsed.find((p: any) => p.season > 4);
+    expect(newSeasonEp).toBeDefined();
+    expect(newSeasonEp.status).toBe('To do');
+  });
 });

@@ -10,11 +10,13 @@ import {
   Check,
   Film,
   Globe,
+  RefreshCw,
 } from 'lucide-react';
 import type { Movie, WatchStatus } from '@/db/schema';
 import { StatusBadge } from './status-badge';
 import { getFullPosterUrl } from '@/lib/tmdb';
 import { SeriesProgressModal } from './series-progress-modal';
+import { sendPushNotification, requestNotificationPermission } from '@/lib/push-notifications';
 
 function parseListField(val: string | null | undefined): string[] {
   if (!val) return [];
@@ -53,6 +55,40 @@ export function MovieDetailsDialog({
 }: MovieDetailsDialogProps) {
   const [isEditingMetadata, setIsEditingMetadata] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  const handleSyncWithImdb = async () => {
+    if (!movie || movie.mediaType !== 'SERIES' || isSyncing) return;
+    setIsSyncing(true);
+
+    await requestNotificationPermission();
+
+    try {
+      const res = await fetch(`/api/movies/${movie.id}/sync-series`, {
+        method: 'POST',
+      });
+      const data: any = await res.json();
+
+      if (res.ok && data.movie) {
+        if (data.hasNewSeasons) {
+          sendPushNotification(`🎬 New Season Alert: ${movie.title}`, {
+            body: `Season ${data.movie.totalSeasons} is now available on IMDb!`,
+          });
+        }
+        if (data.updated) {
+          await onUpdate(movie.id, {
+            totalSeasons: data.movie.totalSeasons,
+            totalEpisodes: data.movie.totalEpisodes,
+            seriesProgress: data.movie.seriesProgress,
+          });
+        }
+      }
+    } catch {
+      // ignore
+    } finally {
+      setIsSyncing(false);
+    }
+  };
   const [imageError, setImageError] = useState(false);
   const [isProgressModalOpen, setIsProgressModalOpen] = useState(false);
 
@@ -528,6 +564,20 @@ export function MovieDetailsDialog({
                             <span className="rounded bg-purple-500/25 px-2 py-0.5 text-xs font-bold text-purple-200 border border-purple-500/40 tracking-wide">
                               S{curSeason} E{curEpisode}
                             </span>
+                            <button
+                              type="button"
+                              onClick={handleSyncWithImdb}
+                              disabled={isSyncing}
+                              className="flex items-center gap-1 rounded bg-[#262626] hover:bg-purple-900/40 border border-neutral-700 hover:border-purple-500/40 px-2 py-0.5 text-[11px] font-medium text-neutral-300 hover:text-purple-300 transition-colors disabled:opacity-50"
+                              title="Sync latest seasons and episodes with IMDb"
+                            >
+                              <RefreshCw
+                                className={`h-3 w-3 ${
+                                  isSyncing ? 'animate-spin text-purple-400' : 'text-purple-400'
+                                }`}
+                              />
+                              <span>{isSyncing ? 'Syncing...' : 'Sync'}</span>
+                            </button>
                             <button
                               type="button"
                               onClick={() => setIsProgressModalOpen(true)}
