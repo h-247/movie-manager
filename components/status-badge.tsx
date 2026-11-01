@@ -51,14 +51,14 @@ export function StatusBadge({
     <Component
       type={onClick ? 'button' : undefined}
       onClick={onClick}
-      className={`inline-flex items-center rounded-full border transition-colors ${config.badgeClass} ${sizeClasses} ${
+      className={`inline-flex items-center shrink-0 whitespace-nowrap rounded-full border transition-colors ${config.badgeClass} ${sizeClasses} ${
         onClick ? 'cursor-pointer hover:opacity-90' : ''
       } ${className}`}
     >
       <span
         className={`h-1.5 w-1.5 rounded-full ${config.dotColor} shrink-0`}
       />
-      <span>{config.label}</span>
+      <span className="whitespace-nowrap">{config.label}</span>
     </Component>
   );
 }

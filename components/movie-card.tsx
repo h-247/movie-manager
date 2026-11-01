@@ -372,49 +372,52 @@ export function MovieCard({
       className="group relative flex flex-col justify-between rounded-2xl border border-neutral-800 bg-[#262626] p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-neutral-700 hover:shadow-xl hover:shadow-black/50 cursor-pointer"
     >
       <div>
-        {/* Card Header: Title, Series/Movie badge, Country, and Movie Status next to each other on the same line */}
+        {/* Card Header: Title, Series/Movie badge, Country, and Movie Status next to each other */}
         <div className="flex items-center justify-between gap-2 pb-2.5 mb-2.5 border-b border-neutral-800/80">
-          <div className="flex items-center gap-2 min-w-0 flex-1">
+          <div className="flex items-center gap-2 min-w-0 flex-1 flex-wrap">
             {/* Title */}
             <h3
-              className="text-base font-bold text-white group-hover:text-purple-300 leading-snug transition-colors truncate min-w-0 shrink"
+              className="text-base font-bold text-white group-hover:text-purple-300 leading-snug transition-colors line-clamp-1"
               title={movie.title}
             >
               {movie.title}
             </h3>
 
-            {/* Series (or Movie) */}
-            <span
-              className={`rounded px-1.5 py-0.5 text-[10px] font-semibold border shrink-0 whitespace-nowrap ${
-                movie.mediaType === 'SERIES'
-                  ? 'bg-purple-500/20 text-purple-300 border-purple-500/30'
-                  : 'bg-blue-500/20 text-blue-300 border-blue-500/30'
-              }`}
-            >
-              {movie.mediaType === 'SERIES' ? 'Series' : 'Movie'}
-            </span>
-
-            {/* Country */}
-            {countriesList.length > 0 && (
-              <span className="flex items-center gap-1 rounded bg-[#1A1A1A] border border-neutral-700/60 px-1.5 py-0.5 text-[10px] font-medium text-neutral-300 shrink-0 whitespace-nowrap">
-                <Globe className="h-2.5 w-2.5 text-cyan-400 shrink-0" />
-                <span>{countriesList.join(', ')}</span>
+            {/* Badges cluster */}
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {/* Series (or Movie) */}
+              <span
+                className={`rounded px-1.5 py-0.5 text-[10px] font-semibold border shrink-0 whitespace-nowrap ${
+                  movie.mediaType === 'SERIES'
+                    ? 'bg-purple-500/20 text-purple-300 border-purple-500/30'
+                    : 'bg-blue-500/20 text-blue-300 border-blue-500/30'
+                }`}
+              >
+                {movie.mediaType === 'SERIES' ? 'Series' : 'Movie'}
               </span>
-            )}
 
-            {/* Movie Status (placed next to Canada) */}
-            <StatusBadge
-              status={displayStatus}
-              size="sm"
-              onClick={
-                movie.mediaType !== 'SERIES'
-                  ? (e) => {
-                      e?.stopPropagation();
-                      handleMovieStatusCycle(e);
-                    }
-                  : undefined
-              }
-            />
+              {/* Country (Full Name without truncation) */}
+              {countriesList.length > 0 && (
+                <span className="flex items-center gap-1 rounded bg-[#1A1A1A] border border-neutral-700/60 px-1.5 py-0.5 text-[10px] font-medium text-neutral-300 shrink-0 whitespace-nowrap">
+                  <Globe className="h-2.5 w-2.5 text-cyan-400 shrink-0" />
+                  <span>{countriesList.join(', ')}</span>
+                </span>
+              )}
+
+              {/* Movie Status */}
+              <StatusBadge
+                status={displayStatus}
+                size="sm"
+                onClick={
+                  movie.mediaType !== 'SERIES'
+                    ? (e) => {
+                        e?.stopPropagation();
+                        handleMovieStatusCycle(e);
+                      }
+                    : undefined
+                }
+              />
+            </div>
           </div>
 
           {movie.personalRating && (

@@ -39,13 +39,15 @@ export function SeriesProgressModal({
   onUpdateMovie,
 }: SeriesProgressModalProps) {
   const [rows, setRows] = useState<EpisodeProgressRow[]>([]);
+  const [selectedSeasonFilter, setSelectedSeasonFilter] = useState<number | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Initialize table rows from movie.seriesProgress or fallback to movie's current progress
+  // Initialize table rows from movie.seriesProgress or generate standard seasons & episodes
   useEffect(() => {
     if (!isOpen) return;
     setError(null);
+    setSelectedSeasonFilter(null);
 
     const curSeason = movie.currentSeason || 1;
     const curEpisode = movie.currentEpisode || 1;
@@ -56,8 +58,7 @@ export function SeriesProgressModal({
 
     const totalEps = movie.totalEpisodes || null;
     const totalSeas = movie.totalSeasons || 1;
-    const epsPerSeason = totalEps && totalSeas ? Math.ceil(totalEps / totalSeas) : null;
-    const maxSeasonEps = epsPerSeason || totalEps || 8;
+    const epsPerSeason = totalEps && totalSeas ? Math.ceil(totalEps / totalSeas) : (totalEps || 8);
 
     if (movie.seriesProgress) {
       try {
@@ -72,23 +73,6 @@ export function SeriesProgressModal({
             minute: typeof item.minute === 'number' && item.minute >= 0 ? Math.min(item.minute, 59) : 0,
           }));
 
-          const maxLoadedEp = Math.max(
-            ...loadedRows.filter((r) => r.season === curSeason).map((r) => r.episode),
-            0,
-          );
-          if (maxSeasonEps > maxLoadedEp) {
-            for (let ep = maxLoadedEp + 1; ep <= maxSeasonEps; ep++) {
-              loadedRows.push({
-                id: `ep-${curSeason}-${ep}`,
-                season: curSeason,
-                episode: ep,
-                status: 'To do',
-                hour: 0,
-                minute: 0,
-              });
-            }
-          }
-
           setRows(loadedRows);
           return;
         }
@@ -97,55 +81,57 @@ export function SeriesProgressModal({
       }
     }
 
-    // Default initialization when no seriesProgress is saved
+    // Default initialization when no seriesProgress is saved:
+    // Generate all seasons and episodes for the series
     const initialRows: EpisodeProgressRow[] = [];
 
-    // If curEpisode > 1, add previous completed episodes
-    for (let ep = 1; ep < curEpisode; ep++) {
-      initialRows.push({
-        id: `ep-${curSeason}-${ep}`,
-        season: curSeason,
-        episode: ep,
-        status: 'Done',
-        hour: 0,
-        minute: 0,
-      });
-    }
+    for (let s = 1; s <= totalSeas; s++) {
+      for (let ep = 1; ep <= epsPerSeason; ep++) {
+        let epStatus: SeriesEpisodeStatus = 'To do';
+        let epHour = 0;
+        let epMin = 0;
 
-    // Current episode
-    initialRows.push({
-      id: `ep-${curSeason}-${curEpisode}`,
-      season: curSeason,
-      episode: curEpisode,
-      status: curStatus,
-      hour: curStatus === 'Doing' ? curHour : 0,
-      minute: curStatus === 'Doing' ? curMin : 0,
-    });
+        if (movie.status === 'DONE') {
+          epStatus = 'Done';
+        } else if (movie.status === 'DOING') {
+          if (s < curSeason || (s === curSeason && ep < curEpisode)) {
+            epStatus = 'Done';
+          } else if (s === curSeason && ep === curEpisode) {
+            epStatus = curStatus;
+            epHour = curHour;
+            epMin = curMin;
+          } else {
+            epStatus = 'To do';
+          }
+        } else {
+          epStatus = 'To do';
+        }
 
-    // Populate all remaining episodes of the season up to maxSeasonEps (e.g. all 8 episodes of Season 1)
-    if (maxSeasonEps > curEpisode) {
-      for (let ep = curEpisode + 1; ep <= maxSeasonEps; ep++) {
         initialRows.push({
-          id: `ep-${curSeason}-${ep}`,
-          season: curSeason,
+          id: `ep-${s}-${ep}`,
+          season: s,
           episode: ep,
-          status: 'To do',
-          hour: 0,
-          minute: 0,
+          status: epStatus,
+          hour: epHour,
+          minute: epMin,
         });
       }
     }
 
-    setRows(initialRows.length > 0 ? initialRows : [
-      {
-        id: `ep-1-1`,
-        season: 1,
-        episode: 1,
-        status: 'To do',
-        hour: 0,
-        minute: 0,
-      },
-    ]);
+    setRows(
+      initialRows.length > 0
+        ? initialRows
+        : [
+            {
+              id: 'ep-1-1',
+              season: 1,
+              episode: 1,
+              status: 'To do',
+              hour: 0,
+              minute: 0,
+            },
+          ],
+    );
   }, [isOpen, movie]);
 
   // Handle ESC key to close
@@ -180,9 +166,37 @@ export function SeriesProgressModal({
   };
 
   const handleAddRow = () => {
+    const totalEps = movie.totalEpisodes || null;
+    const totalSeas = movie.totalSeasons || 1;
+    const epsPerSeason = totalEps && totalSeas ? Math.ceil(totalEps / totalSeas) : 8;
+
+    // If a season filter is active, add to that season
+    if (selectedSeasonFilter !== null) {
+      const seasonRows = rows.filter((r) => r.season === selectedSeasonFilter);
+      const maxEp = seasonRows.reduce((max, r) => Math.max(max, r.episode), 0);
+      setRows((prev) => [
+        ...prev,
+        {
+          id: `ep-${selectedSeasonFilter}-${maxEp + 1}-${Date.now()}`,
+          season: selectedSeasonFilter,
+          episode: maxEp + 1,
+          status: 'To do',
+          hour: 0,
+          minute: 0,
+        },
+      ]);
+      return;
+    }
+
     const lastRow = rows[rows.length - 1];
-    const newSeason = lastRow ? lastRow.season : (movie.currentSeason || 1);
-    const newEpisode = lastRow ? lastRow.episode + 1 : 1;
+    let newSeason = lastRow ? lastRow.season : (movie.currentSeason || 1);
+    let newEpisode = lastRow ? lastRow.episode + 1 : 1;
+
+    // Rollover to next season if episode exceeds the episodes per season
+    if (newEpisode > epsPerSeason) {
+      newSeason += 1;
+      newEpisode = 1;
+    }
 
     setRows((prev) => [
       ...prev,
@@ -207,26 +221,26 @@ export function SeriesProgressModal({
   };
 
   const handleQuickPopulate = () => {
-    const curSeason = rows[0]?.season || movie.currentSeason || 1;
     const totalEps = movie.totalEpisodes || null;
     const totalSeas = movie.totalSeasons || 1;
-    const epsPerSeason = totalEps && totalSeas ? Math.ceil(totalEps / totalSeas) : null;
-    const targetCount = epsPerSeason || totalEps || 8;
+    const epsPerSeason = totalEps && totalSeas ? Math.ceil(totalEps / totalSeas) : (totalEps || 8);
     const populated: EpisodeProgressRow[] = [];
 
-    for (let ep = 1; ep <= targetCount; ep++) {
-      const existing = rows.find((r) => r.season === curSeason && r.episode === ep);
-      if (existing) {
-        populated.push(existing);
-      } else {
-        populated.push({
-          id: `ep-${curSeason}-${ep}`,
-          season: curSeason,
-          episode: ep,
-          status: ep === 1 ? 'Doing' : 'To do',
-          hour: 0,
-          minute: 0,
-        });
+    for (let s = 1; s <= totalSeas; s++) {
+      for (let ep = 1; ep <= epsPerSeason; ep++) {
+        const existing = rows.find((r) => r.season === s && r.episode === ep);
+        if (existing) {
+          populated.push(existing);
+        } else {
+          populated.push({
+            id: `ep-${s}-${ep}`,
+            season: s,
+            episode: ep,
+            status: 'To do',
+            hour: 0,
+            minute: 0,
+          });
+        }
       }
     }
     setRows(populated);
@@ -383,6 +397,45 @@ export function SeriesProgressModal({
           </div>
         </div>
 
+        {/* Season Filter Tabs (Like IMDb tabs: 1 2 3 4 5 6) */}
+        {(() => {
+          const availableSeasons = Array.from(new Set(rows.map((r) => r.season))).sort((a, b) => a - b);
+          if (availableSeasons.length <= 1) return null;
+          return (
+            <div className="flex items-center gap-1.5 border-b border-neutral-800/80 px-6 py-2 bg-[#1b1b1b] overflow-x-auto scrollbar-none">
+              <span className="text-neutral-400 text-xs font-medium mr-1 shrink-0">Seasons:</span>
+              <button
+                type="button"
+                onClick={() => setSelectedSeasonFilter(null)}
+                className={`px-3 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
+                  selectedSeasonFilter === null
+                    ? 'bg-purple-600 text-white shadow-sm'
+                    : 'bg-[#262626] text-neutral-400 hover:text-white hover:bg-neutral-800'
+                }`}
+              >
+                All ({rows.length})
+              </button>
+              {availableSeasons.map((s) => {
+                const count = rows.filter((r) => r.season === s).length;
+                return (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => setSelectedSeasonFilter(s)}
+                    className={`px-3 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
+                      selectedSeasonFilter === s
+                        ? 'bg-purple-600 text-white shadow-sm'
+                        : 'bg-[#262626] text-neutral-400 hover:text-white hover:bg-neutral-800'
+                    }`}
+                  >
+                    Season {s} ({count})
+                  </button>
+                );
+              })}
+            </div>
+          );
+        })()}
+
         {/* Error notification */}
         {error && (
           <div className="mx-6 mt-4 flex items-center gap-2 rounded-xl border border-red-500/30 bg-red-950/40 px-3.5 py-2.5 text-xs text-red-200">
@@ -405,7 +458,10 @@ export function SeriesProgressModal({
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-800/80">
-                {rows.map((row) => {
+                {(selectedSeasonFilter !== null
+                  ? rows.filter((r) => r.season === selectedSeasonFilter)
+                  : rows
+                ).map((row) => {
                   const isDoing = row.status === 'Doing';
 
                   return (
@@ -588,10 +644,15 @@ export function SeriesProgressModal({
               className="flex items-center gap-1.5 rounded-xl border border-neutral-700 bg-neutral-800/80 px-3.5 py-1.5 text-xs font-semibold text-neutral-200 hover:bg-neutral-700 hover:text-white transition-colors"
             >
               <Plus className="h-3.5 w-3.5 text-purple-400" />
-              Add Episode Row
+              <span>
+                Add Episode Row{selectedSeasonFilter !== null ? ` (S${selectedSeasonFilter})` : ''}
+              </span>
             </button>
             <span className="text-[11px] text-neutral-400">
               {rows.length} {rows.length === 1 ? 'episode' : 'episodes'} tracked
+              {selectedSeasonFilter !== null && (
+                <> ({rows.filter((r) => r.season === selectedSeasonFilter).length} in Season {selectedSeasonFilter})</>
+              )}
             </span>
           </div>
         </div>
