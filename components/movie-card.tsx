@@ -372,7 +372,7 @@ export function MovieCard({
       className="group relative flex flex-col justify-between rounded-2xl border border-neutral-800 bg-[#262626] p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-neutral-700 hover:shadow-xl hover:shadow-black/50 cursor-pointer"
     >
       <div>
-        {/* Card Header: Title, Series/Movie badge, and Country next to each other on the same line */}
+        {/* Card Header: Title, Series/Movie badge, Country, and Movie Status next to each other on the same line */}
         <div className="flex items-center justify-between gap-2 pb-2.5 mb-2.5 border-b border-neutral-800/80">
           <div className="flex items-center gap-2 min-w-0 flex-1">
             {/* Title */}
@@ -401,6 +401,20 @@ export function MovieCard({
                 <span>{countriesList.join(', ')}</span>
               </span>
             )}
+
+            {/* Movie Status (placed next to Canada) */}
+            <StatusBadge
+              status={displayStatus}
+              size="sm"
+              onClick={
+                movie.mediaType !== 'SERIES'
+                  ? (e) => {
+                      e?.stopPropagation();
+                      handleMovieStatusCycle(e);
+                    }
+                  : undefined
+              }
+            />
           </div>
 
           {movie.personalRating && (
@@ -556,15 +570,6 @@ export function MovieCard({
               ))}
             </div>
           )}
-        </div>
-
-        {/* Movie Status at bottom of card */}
-        <div className="mt-3.5 border-t border-neutral-800/80 pt-2.5 flex items-center justify-between">
-          <StatusBadge
-            status={displayStatus}
-            size="sm"
-            onClick={movie.mediaType !== 'SERIES' ? () => { handleMovieStatusCycle(); } : undefined}
-          />
         </div>
       </div>
 

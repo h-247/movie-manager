@@ -5,7 +5,7 @@ interface StatusBadgeProps {
   status: WatchStatus;
   size?: 'sm' | 'md' | 'lg';
   className?: string;
-  onClick?: () => void;
+  onClick?: (e?: React.MouseEvent) => void;
 }
 
 export function StatusBadge({
