@@ -133,94 +133,6 @@ export function Sidebar({
 
   return (
     <>
-      {/* 1. Collapsed Mini-Sidebar Rail (Khi đóng sidebar giống ảnh ChatGPT) */}
-      {!isOpen && (
-        <aside
-          aria-label="Collapsed sidebar"
-          className="hidden md:flex h-screen w-14 sticky top-0 z-30 flex-col justify-between items-center py-3.5 px-2 bg-[#171717] border-r border-neutral-800/80 shrink-0 select-none"
-        >
-          {/* Top Icons Stack */}
-          <div className="flex flex-col items-center gap-3">
-            {/* 1. Toggle Sidebar Icon */}
-            <button
-              type="button"
-              onClick={onToggle}
-              title="Open sidebar (Alt+1)"
-              className="flex h-9 w-9 items-center justify-center rounded-lg text-neutral-400 hover:bg-[#262626] hover:text-white transition-colors"
-            >
-              <PanelLeft className="h-5 w-5" />
-            </button>
-
-            {/* 2. New / Import Title (Plus icon) */}
-            <button
-              type="button"
-              onClick={onOpenImport}
-              title="Import Title (Alt+`)"
-              className="flex h-9 w-9 items-center justify-center rounded-lg text-neutral-400 hover:bg-[#262626] hover:text-white transition-colors"
-            >
-              <Plus className="h-4.5 w-4.5" />
-            </button>
-
-            {/* 3. Search */}
-            <button
-              type="button"
-              onClick={onToggle}
-              title="Search watchlist"
-              className="flex h-9 w-9 items-center justify-center rounded-lg text-neutral-400 hover:bg-[#262626] hover:text-white transition-colors"
-            >
-              <Search className="h-4.5 w-4.5" />
-            </button>
-
-            {/* 4. Genres */}
-            <button
-              type="button"
-              onClick={onOpenManageGenres}
-              title="Genres of Movies"
-              className="flex h-9 w-9 items-center justify-center rounded-lg text-neutral-400 hover:bg-[#262626] hover:text-white transition-colors"
-            >
-              <Tag className="h-4.5 w-4.5" />
-            </button>
-
-            {/* 5. To Do Status filter */}
-            <button
-              type="button"
-              onClick={() => onStatusChange(status === 'TO_DO' ? 'ALL' : 'TO_DO')}
-              title="To do list"
-              className={`flex h-9 w-9 items-center justify-center rounded-lg transition-colors ${
-                status === 'TO_DO'
-                  ? 'bg-yellow-400/20 text-yellow-400 ring-1 ring-yellow-400/40'
-                  : 'text-neutral-400 hover:bg-[#262626] hover:text-white'
-              }`}
-            >
-              <Clock className="h-4.5 w-4.5" />
-            </button>
-
-            {/* 6. All Watchlist Library */}
-            <button
-              type="button"
-              onClick={() => onStatusChange('ALL')}
-              title="Watchlist library"
-              className={`flex h-9 w-9 items-center justify-center rounded-lg transition-colors ${
-                status === 'ALL'
-                  ? 'bg-purple-500/20 text-purple-300 ring-1 ring-purple-500/40'
-                  : 'text-neutral-400 hover:bg-[#262626] hover:text-white'
-              }`}
-            >
-              <Library className="h-4.5 w-4.5" />
-            </button>
-          </div>
-
-          {/* Bottom: User Avatar (Orange Circle with "H2" matching the screenshot) */}
-          <div
-            title="Toàn (H2)"
-            className="flex h-7 w-7 items-center justify-center rounded-full bg-orange-600 text-[11px] font-bold text-white shadow-sm ring-1 ring-orange-500/50 hover:opacity-90 cursor-pointer"
-          >
-            H2
-          </div>
-        </aside>
-      )}
-
-      {/* 2. Expanded Sidebar (When open) */}
       {/* Mobile Backdrop Overlay */}
       {isOpen && (
         <div
@@ -230,7 +142,7 @@ export function Sidebar({
         />
       )}
 
-      {/* Expanded Sidebar Drawer / Container */}
+      {/* Expanded Sidebar Drawer / Container (hidden when closed) */}
       <aside
         className={`fixed inset-y-0 left-0 z-50 flex h-screen w-72 flex-col border-r border-neutral-800 bg-[#171717] text-[#ECECEC] transition-all duration-200 ease-in-out md:sticky md:top-0 md:z-20 ${
           isOpen

@@ -297,15 +297,17 @@ export default function HomePage() {
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 min-h-screen">
-        {/* Floating Mobile Sidebar Toggle */}
-        <button
-          type="button"
-          onClick={() => setIsSidebarOpen((prev) => !prev)}
-          title={isSidebarOpen ? 'Close sidebar (Alt+1)' : 'Open sidebar (Alt+1)'}
-          className="md:hidden fixed top-3 left-3 z-30 flex h-9 w-9 items-center justify-center rounded-xl border border-neutral-800 bg-[#262626]/90 backdrop-blur-sm text-neutral-300 shadow-lg hover:text-white transition-colors"
-        >
-          <PanelLeft className="h-4 w-4" />
-        </button>
+        {/* Floating Sidebar Toggle (visible when sidebar is closed) */}
+        {!isSidebarOpen && (
+          <button
+            type="button"
+            onClick={() => setIsSidebarOpen(true)}
+            title="Open sidebar (Alt+1)"
+            className="fixed top-3 left-3 z-30 flex h-9 w-9 items-center justify-center rounded-xl border border-neutral-800 bg-[#262626]/90 backdrop-blur-sm text-neutral-300 shadow-lg hover:text-white hover:bg-neutral-800 transition-colors"
+          >
+            <PanelLeft className="h-4 w-4" />
+          </button>
+        )}
 
         {/* Main Content Grid */}
         <main className="flex-1 px-4 py-4 sm:px-6 sm:py-6">
