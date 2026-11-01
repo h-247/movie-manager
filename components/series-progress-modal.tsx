@@ -337,7 +337,7 @@ export function SeriesProgressModal({
       }}
     >
       <div
-        className="w-full max-w-2xl max-h-[90vh] flex flex-col rounded-2xl border border-neutral-800 bg-[#1A1A1A] text-white shadow-2xl overflow-hidden"
+        className="w-full max-w-3xl max-h-[90vh] flex flex-col rounded-2xl border border-neutral-800 bg-[#1A1A1A] text-white shadow-2xl overflow-hidden"
         role="dialog"
         aria-modal="true"
         aria-labelledby="series-progress-title"
@@ -402,12 +402,12 @@ export function SeriesProgressModal({
           const availableSeasons = Array.from(new Set(rows.map((r) => r.season))).sort((a, b) => a - b);
           if (availableSeasons.length <= 1) return null;
           return (
-            <div className="flex items-center gap-1.5 border-b border-neutral-800/80 px-6 py-2 bg-[#1b1b1b] overflow-x-auto scrollbar-none">
+            <div className="flex items-center gap-1.5 border-b border-neutral-800/80 px-6 py-2.5 bg-[#1b1b1b] overflow-x-auto no-scrollbar shrink-0">
               <span className="text-neutral-400 text-xs font-medium mr-1 shrink-0">Seasons:</span>
               <button
                 type="button"
                 onClick={() => setSelectedSeasonFilter(null)}
-                className={`px-3 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
+                className={`px-3 py-1 rounded-lg text-xs font-semibold whitespace-nowrap shrink-0 transition-all ${
                   selectedSeasonFilter === null
                     ? 'bg-purple-600 text-white shadow-sm'
                     : 'bg-[#262626] text-neutral-400 hover:text-white hover:bg-neutral-800'
@@ -422,7 +422,7 @@ export function SeriesProgressModal({
                     key={s}
                     type="button"
                     onClick={() => setSelectedSeasonFilter(s)}
-                    className={`px-3 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
+                    className={`px-3 py-1 rounded-lg text-xs font-semibold whitespace-nowrap shrink-0 transition-all ${
                       selectedSeasonFilter === s
                         ? 'bg-purple-600 text-white shadow-sm'
                         : 'bg-[#262626] text-neutral-400 hover:text-white hover:bg-neutral-800'
@@ -444,17 +444,17 @@ export function SeriesProgressModal({
           </div>
         )}
 
-        {/* 4-Column Table */}
-        <div className="flex-1 overflow-y-auto px-6 py-4">
-          <div className="rounded-xl border border-neutral-800 bg-[#222222] overflow-hidden">
-            <table className="w-full border-collapse text-left text-xs">
-              <thead>
+        {/* Episode Table + Fixed Toolbar */}
+        <div className="flex-1 flex flex-col min-h-0 px-6 py-4 overflow-hidden">
+          <div className="flex-1 overflow-y-auto rounded-xl border border-neutral-800 bg-[#222222]">
+            <table className="w-full border-collapse text-left text-xs table-fixed">
+              <thead className="sticky top-0 z-10 bg-[#282828] shadow-sm">
                 <tr className="border-b border-neutral-800 bg-[#282828] text-neutral-300 font-semibold uppercase tracking-wider text-[11px]">
-                  <th className="py-2.5 px-4 w-24">Season</th>
-                  <th className="py-2.5 px-4 w-24">Episode</th>
-                  <th className="py-2.5 px-4 w-36">Status</th>
-                  <th className="py-2.5 px-4">Hour &amp; Minute (Doing)</th>
-                  <th className="py-2.5 px-3 w-12 text-center">Action</th>
+                  <th className="py-2.5 px-3 w-20">Season</th>
+                  <th className="py-2.5 px-3 w-20">Episode</th>
+                  <th className="py-2.5 px-3 w-32">Status</th>
+                  <th className="py-2.5 px-3">Hour &amp; Minute (Doing)</th>
+                  <th className="py-2.5 px-2 w-14 text-center">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-800/80">
@@ -472,7 +472,7 @@ export function SeriesProgressModal({
                       }`}
                     >
                       {/* Column 1: Season */}
-                      <td className="py-2.5 px-4">
+                      <td className="py-2.5 px-3">
                         <div className="flex items-center gap-1.5">
                           <span className="text-neutral-500 font-medium text-[11px]">S</span>
                           <input
@@ -485,13 +485,13 @@ export function SeriesProgressModal({
                                 season: Math.max(1, parseInt(e.target.value, 10) || 1),
                               })
                             }
-                            className="w-16 rounded-md bg-[#161616] border border-neutral-700 px-2 py-1 text-center font-bold text-white focus:border-purple-500 focus:outline-none"
+                            className="w-12 rounded-md bg-[#161616] border border-neutral-700 px-1.5 py-1 text-center font-bold text-white focus:border-purple-500 focus:outline-none"
                           />
                         </div>
                       </td>
 
                       {/* Column 2: Episode */}
-                      <td className="py-2.5 px-4">
+                      <td className="py-2.5 px-3">
                         <div className="flex items-center gap-1.5">
                           <span className="text-neutral-500 font-medium text-[11px]">Ep</span>
                           <input
@@ -504,13 +504,13 @@ export function SeriesProgressModal({
                                 episode: Math.max(1, parseInt(e.target.value, 10) || 1),
                               })
                             }
-                            className="w-16 rounded-md bg-[#161616] border border-neutral-700 px-2 py-1 text-center font-bold text-white focus:border-purple-500 focus:outline-none"
+                            className="w-12 rounded-md bg-[#161616] border border-neutral-700 px-1.5 py-1 text-center font-bold text-white focus:border-purple-500 focus:outline-none"
                           />
                         </div>
                       </td>
 
                       {/* Column 3: Status (To do, Doing, Done) */}
-                      <td className="py-2.5 px-4">
+                      <td className="py-2.5 px-3">
                         <select
                           value={row.status}
                           onChange={(e) =>
@@ -518,7 +518,7 @@ export function SeriesProgressModal({
                               status: e.target.value as SeriesEpisodeStatus,
                             })
                           }
-                          className={`w-full rounded-md border px-2.5 py-1 text-xs font-semibold focus:outline-none transition-colors ${
+                          className={`w-full min-w-[96px] rounded-md border px-2 py-1 text-xs font-semibold focus:outline-none transition-colors cursor-pointer ${
                             row.status === 'Done'
                               ? 'border-emerald-500/50 bg-emerald-950/40 text-emerald-300 focus:border-emerald-400'
                               : row.status === 'Doing'
@@ -539,7 +539,7 @@ export function SeriesProgressModal({
                       </td>
 
                       {/* Column 4: Hour và Minute để sử dụng khi Status là doing */}
-                      <td className="py-2.5 px-4">
+                      <td className="py-2.5 px-3">
                         <div className="flex items-center gap-2">
                           {/* Hour Input */}
                           <div className="flex items-center gap-1">
@@ -556,7 +556,7 @@ export function SeriesProgressModal({
                               }
                               placeholder="0"
                               title={isDoing ? 'Hour' : 'Hour enabled when Doing'}
-                              className={`w-14 rounded-md border px-2 py-1 text-center font-medium transition-all ${
+                              className={`w-12 rounded-md border px-1.5 py-1 text-center font-medium transition-all ${
                                 isDoing
                                   ? 'border-sky-500/50 bg-[#161616] text-white focus:border-sky-400 focus:outline-none'
                                   : 'border-neutral-800 bg-neutral-900/60 text-neutral-600 cursor-not-allowed opacity-50'
@@ -590,7 +590,7 @@ export function SeriesProgressModal({
                               }
                               placeholder="0"
                               title={isDoing ? 'Minute' : 'Minute enabled when Doing'}
-                              className={`w-14 rounded-md border px-2 py-1 text-center font-medium transition-all ${
+                              className={`w-12 rounded-md border px-1.5 py-1 text-center font-medium transition-all ${
                                 isDoing
                                   ? 'border-sky-500/50 bg-[#161616] text-white focus:border-sky-400 focus:outline-none'
                                   : 'border-neutral-800 bg-neutral-900/60 text-neutral-600 cursor-not-allowed opacity-50'
@@ -611,15 +611,15 @@ export function SeriesProgressModal({
                               Active
                             </span>
                           ) : (
-                            <span className="text-[10px] text-neutral-500 italic ml-1">
-                              (Only when Doing)
+                            <span className="text-[10px] text-neutral-600 italic ml-1">
+                              (Doing only)
                             </span>
                           )}
                         </div>
                       </td>
 
                       {/* Action: Delete */}
-                      <td className="py-2.5 px-3 text-center">
+                      <td className="py-2.5 px-2 text-center">
                         <button
                           type="button"
                           onClick={() => handleDeleteRow(row.id)}
@@ -636,8 +636,8 @@ export function SeriesProgressModal({
             </table>
           </div>
 
-          {/* Add Row Button */}
-          <div className="mt-3 flex items-center justify-between">
+          {/* Add Row Button - Always visible! */}
+          <div className="mt-3 flex items-center justify-between shrink-0">
             <button
               type="button"
               onClick={handleAddRow}
