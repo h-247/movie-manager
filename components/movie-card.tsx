@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ExternalLink, Star, Globe, Clock } from 'lucide-react';
+import { Star, Globe, Clock } from 'lucide-react';
 import type { Movie, WatchStatus } from '@/db/schema';
 import { StatusBadge } from './status-badge';
 import { SeriesProgressModal } from './series-progress-modal';
@@ -372,18 +372,27 @@ export function MovieCard({
       className="group relative flex flex-col justify-between rounded-2xl border border-neutral-800 bg-[#262626] p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-neutral-700 hover:shadow-xl hover:shadow-black/50 cursor-pointer"
     >
       <div>
-        {/* Top row: Title, Series, Country, Year, and IMDb Link */}
-        <div className="flex items-center justify-between gap-2 pb-2.5 mb-2.5 border-b border-neutral-800/80">
-          <div className="flex items-center gap-1.5 min-w-0 flex-1 overflow-hidden">
-            {/* 1. Title */}
+        {/* Card Header: Title on line 1, Badges on line 2 (separated lines to prevent cramping) */}
+        <div className="pb-2.5 mb-2.5 border-b border-neutral-800/80">
+          {/* Line 1: Title & Optional Rating */}
+          <div className="flex items-start justify-between gap-2">
             <h3
-              className="text-base font-bold text-white group-hover:text-purple-300 leading-snug transition-colors truncate min-w-0 shrink"
+              className="text-base font-bold text-white group-hover:text-purple-300 leading-snug transition-colors line-clamp-1 flex-1 min-w-0"
               title={movie.title}
             >
               {movie.title}
             </h3>
 
-            {/* 2. Series (or Movie) */}
+            {movie.personalRating && (
+              <div className="flex items-center gap-1 rounded-md bg-[#1A1A1A] px-1.5 py-0.5 text-xs font-semibold text-amber-400 border border-neutral-800 shrink-0">
+                <Star className="h-3 w-3 fill-amber-400" />
+                <span>{movie.personalRating}/10</span>
+              </div>
+            )}
+          </div>
+
+          {/* Line 2: Badges (Series/Movie, Country) - Year and IMDb link removed per request */}
+          <div className="flex items-center gap-1.5 mt-2 flex-wrap">
             <span
               className={`rounded px-1.5 py-0.5 text-[10px] font-semibold border shrink-0 whitespace-nowrap ${
                 movie.mediaType === 'SERIES'
@@ -394,39 +403,12 @@ export function MovieCard({
               {movie.mediaType === 'SERIES' ? 'Series' : 'Movie'}
             </span>
 
-            {/* 3. Country */}
             {countriesList.length > 0 && (
               <span className="flex items-center gap-1 rounded bg-[#1A1A1A] border border-neutral-700/60 px-1.5 py-0.5 text-[10px] font-medium text-neutral-300 shrink-0 whitespace-nowrap">
                 <Globe className="h-2.5 w-2.5 text-cyan-400 shrink-0" />
                 <span>{countriesList.join(', ')}</span>
               </span>
             )}
-
-            {/* 4. Year */}
-            {movie.releaseYear && (
-              <span className="rounded bg-[#1A1A1A] border border-neutral-700/60 px-1.5 py-0.5 text-[10px] font-medium text-neutral-300 shrink-0 whitespace-nowrap">
-                {movie.releaseYear}
-              </span>
-            )}
-          </div>
-
-          <div className="flex items-center gap-1.5 shrink-0 ml-auto">
-            {movie.personalRating && (
-              <div className="flex items-center gap-1 rounded-md bg-[#1A1A1A] px-1.5 py-0.5 text-xs font-semibold text-amber-400 border border-neutral-800">
-                <Star className="h-3 w-3 fill-amber-400" />
-                <span>{movie.personalRating}/10</span>
-              </div>
-            )}
-            <a
-              href={movie.imdbUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={(e) => e.stopPropagation()}
-              title="Open on IMDb"
-              className="flex h-6 w-6 items-center justify-center rounded-md bg-[#1A1A1A] text-neutral-400 hover:text-white border border-neutral-800 transition-colors"
-            >
-              <ExternalLink className="h-3 w-3" />
-            </a>
           </div>
         </div>
 
@@ -458,7 +440,7 @@ export function MovieCard({
                 </button>
 
                 {/* 2. Three status buttons: To do, Doing, Done */}
-                <div className="flex items-center gap-0.5 rounded-lg bg-black/40 p-0.5 border border-purple-500/20 shrink-0">
+                <div className="flex items-center gap-0.5 rounded-lg bg-black/40 p-0.5 border border-purple-500/20 min-w-0">
                   {(
                     [
                       {
@@ -498,7 +480,7 @@ export function MovieCard({
                             btn.id,
                           )
                         }
-                        className={`flex items-center gap-1 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md text-[10px] sm:text-[11px] whitespace-nowrap shrink-0 transition-all border ${
+                        className={`flex items-center justify-center gap-1 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md text-[10px] sm:text-[11px] whitespace-nowrap transition-all border ${
                           isSelected
                             ? btn.activeClass
                             : 'border-transparent text-neutral-400 hover:text-white hover:bg-neutral-800/50'
