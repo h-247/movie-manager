@@ -57,36 +57,27 @@ export default function HomePage() {
   const [movieToDelete, setMovieToDelete] = useState<Movie | null>(null);
 
   // Global shortcuts:
-  // - Ctrl+Shift+Z: Open Import Title modal
-  // - Ctrl+Shift+A: Toggle sidebar
+  // - Ctrl+` (Backquote): Open Import Title modal
+  // - Ctrl+1 (Digit1): Toggle sidebar
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const isCtrlOrMeta = e.ctrlKey || e.metaKey;
-      if (!isCtrlOrMeta || !e.shiftKey) return;
+      if (!isCtrlOrMeta) return;
 
-      const key = e.key.toLowerCase();
+      const key = e.key;
       const code = e.code;
 
-      // 1. Ctrl+Shift+A: Toggle sidebar
-      if (key === 'a' || code === 'KeyA') {
+      // 1. Ctrl+1: Toggle sidebar
+      if (key === '1' || code === 'Digit1') {
         e.preventDefault();
         setIsSidebarOpen((prev) => !prev);
         return;
       }
 
-      // 2. Ctrl+Shift+Z: Open Import Title modal (unless focused in a text input)
-      if (key === 'z' || code === 'KeyZ') {
-        const target = e.target as HTMLElement;
-        const isTextInput =
-          target &&
-          (target.tagName === 'INPUT' ||
-            target.tagName === 'TEXTAREA' ||
-            target.isContentEditable);
-
-        if (!isTextInput) {
-          e.preventDefault();
-          setIsImportOpen(true);
-        }
+      // 2. Ctrl+`: Open Import Title modal
+      if (key === '`' || key === '~' || code === 'Backquote') {
+        e.preventDefault();
+        setIsImportOpen(true);
         return;
       }
     };
@@ -304,7 +295,7 @@ export default function HomePage() {
         <button
           type="button"
           onClick={() => setIsSidebarOpen((prev) => !prev)}
-          title={isSidebarOpen ? 'Close sidebar (Ctrl+Shift+A)' : 'Open sidebar (Ctrl+Shift+A)'}
+          title={isSidebarOpen ? 'Close sidebar (Ctrl+1)' : 'Open sidebar (Ctrl+1)'}
           className="md:hidden fixed top-3 left-3 z-30 flex h-9 w-9 items-center justify-center rounded-xl border border-neutral-800 bg-[#262626]/90 backdrop-blur-sm text-neutral-300 shadow-lg hover:text-white transition-colors"
         >
           <PanelLeft className="h-4 w-4" />
@@ -315,8 +306,8 @@ export default function HomePage() {
           <section aria-label="Movie collection">
             {isLoading && movies.length === 0 ? (
               /* Skeleton Loading Grid without photo */
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 sm:gap-5">
-                {[...Array(8)].map((_, i) => (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-6">
+                {[...Array(6)].map((_, i) => (
                   <div
                     key={i}
                     className="flex flex-col justify-between h-[230px] animate-pulse rounded-2xl bg-[#262626] border border-neutral-800 p-4 space-y-3"
@@ -335,7 +326,7 @@ export default function HomePage() {
               </div>
             ) : movies.length > 0 ? (
               /* Movie Cards Grid */
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-5 sm:gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-6">
                 {movies.map((movie) => (
                   <MovieCard
                     key={movie.id}
