@@ -108,7 +108,23 @@ export async function checkImdbTitleType(imdbId: string): Promise<ImdbTitleInfo>
           plot { plotText { plainText } }
           runtime { seconds }
           episodes {
-            episodes(first: 1) { total }
+            episodes(first: 250) {
+              total
+              edges {
+                node {
+                  id
+                  titleText { text }
+                  releaseDate { year month day }
+                  plot { plotText { plainText } }
+                  series {
+                    episodeNumber {
+                      episodeNumber
+                      seasonNumber
+                    }
+                  }
+                }
+              }
+            }
             seasons { number }
           }
         }
@@ -148,16 +164,64 @@ export async function checkImdbTitleType(imdbId: string): Promise<ImdbTitleInfo>
           releaseDate = `${t.releaseDate.year}-${m}-${d}`;
         }
 
-        const seasonsList = t.episodes?.seasons;
+        const edges = t.episodes?.episodes?.edges || [];
+        let totalEpisodes: number | null = null;
         let totalSeasons: number | null = null;
-        if (Array.isArray(seasonsList) && seasonsList.length > 0) {
-          const valid = seasonsList.filter(
-            (s: any) => typeof s.number === 'number' && s.number > 0,
-          );
-          totalSeasons = valid.length || seasonsList.length;
-        }
 
-        const totalEpisodes: number | null = t.episodes?.episodes?.total ?? null;
+        if (Array.isArray(edges) && edges.length > 0) {
+          // Filter out placeholder / unannounced dummy episodes that have not aired and have no real details
+          // Pattern:
+          // - titleText is placeholder e.g. "Episode #2.1", "Episode #2.2", etc.
+          // - releaseDate is null / missing
+          // - plot is null / missing (shows "Add a plot" on IMDb)
+          const validEdges = edges.filter((e: any) => {
+            const node = e?.node;
+            if (!node) return false;
+            const title = node.titleText?.text?.trim() || '';
+            const isPlaceholderTitle = !title || /^Episode\s*#\d+(\.\d+)?$/i.test(title);
+            const hasNoReleaseDate = !node.releaseDate || !node.releaseDate.year;
+            const hasNoPlot = !node.plot?.plotText?.plainText;
+
+            // If it has a placeholder title and has no release date or no plot, it's a dummy episode
+            if (isPlaceholderTitle && (hasNoReleaseDate || hasNoPlot)) {
+              return false;
+            }
+            // If it has no release date and no plot at all
+            if (hasNoReleaseDate && hasNoPlot) {
+              return false;
+            }
+            return true;
+          });
+
+          totalEpisodes = validEdges.length;
+
+          // Compute unique seasons that actually contain valid episodes
+          const validSeasons = new Set<number>();
+          validEdges.forEach((e: any) => {
+            const sNum = e?.node?.series?.episodeNumber?.seasonNumber;
+            if (typeof sNum === 'number' && sNum > 0) {
+              validSeasons.add(sNum);
+            }
+          });
+
+          if (validSeasons.size > 0) {
+            totalSeasons = validSeasons.size;
+          } else if (Array.isArray(t.episodes?.seasons) && t.episodes.seasons.length > 0) {
+            const valid = t.episodes.seasons.filter(
+              (s: any) => typeof s.number === 'number' && s.number > 0,
+            );
+            totalSeasons = valid.length || t.episodes.seasons.length;
+          }
+        } else {
+          const seasonsList = t.episodes?.seasons;
+          if (Array.isArray(seasonsList) && seasonsList.length > 0) {
+            const valid = seasonsList.filter(
+              (s: any) => typeof s.number === 'number' && s.number > 0,
+            );
+            totalSeasons = valid.length || seasonsList.length;
+          }
+          totalEpisodes = t.episodes?.episodes?.total ?? null;
+        }
 
         const genres = Array.isArray(t.genres?.genres)
           ? t.genres.genres.map((g: any) => g.text).filter(Boolean)
@@ -466,8 +530,8 @@ export async function fetchMovieMetadataByImdbId(
           posterPath: null,
           overview: tv.overview || null,
           runtimeMinutes: runtimeMinutes || imdbInfo.runtimeMinutes || null,
-          totalSeasons: totalSeasons ?? imdbInfo.totalSeasons ?? null,
-          totalEpisodes: totalEpisodes ?? imdbInfo.totalEpisodes ?? null,
+          totalSeasons: imdbInfo.totalSeasons ?? totalSeasons ?? null,
+          totalEpisodes: imdbInfo.totalEpisodes ?? totalEpisodes ?? null,
           genres: genres.length > 0 ? genres : (imdbInfo.genres || []),
           countries: imdbInfo.countries || [],
         },
