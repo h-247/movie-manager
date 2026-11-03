@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Star, Globe, Clock, RefreshCw } from 'lucide-react';
+import { Star, Globe, Clock } from 'lucide-react';
 import type { Movie, WatchStatus } from '@/db/schema';
 import { StatusBadge } from './status-badge';
 import { SeriesProgressModal } from './series-progress-modal';
-import { sendPushNotification, requestNotificationPermission } from '@/lib/push-notifications';
 
 function parseListField(val: string | null | undefined): string[] {
   if (!val) return [];
@@ -152,41 +151,6 @@ export function MovieCard({
   const [rawMinute, setRawMinute] = useState<string>(() =>
     String(activeSeriesEpisode?.minute ?? movie.currentMinute ?? 0),
   );
-  const [isSyncing, setIsSyncing] = useState(false);
-
-  const handleSyncSeries = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (isSyncing || movie.mediaType !== 'SERIES') return;
-    setIsSyncing(true);
-
-    await requestNotificationPermission();
-
-    try {
-      const res = await fetch(`/api/movies/${movie.id}/sync-series`, {
-        method: 'POST',
-      });
-      const data: any = await res.json();
-
-      if (res.ok && data.movie) {
-        if (data.hasNewSeasons) {
-          sendPushNotification(`🎬 New Season Alert: ${movie.title}`, {
-            body: `Season ${data.movie.totalSeasons} is now available on IMDb!`,
-          });
-        }
-        if (data.updated && onUpdateMovie) {
-          await onUpdateMovie(movie.id, {
-            totalSeasons: data.movie.totalSeasons,
-            totalEpisodes: data.movie.totalEpisodes,
-            seriesProgress: data.movie.seriesProgress,
-          });
-        }
-      }
-    } catch {
-      // ignore
-    } finally {
-      setIsSyncing(false);
-    }
-  };
 
   useEffect(() => {
     if (activeSeriesEpisode) {
@@ -453,24 +417,6 @@ export function MovieCard({
                     : undefined
                 }
               />
-
-              {/* Sync button for Series in header */}
-              {movie.mediaType === 'SERIES' && (
-                <button
-                  type="button"
-                  onClick={handleSyncSeries}
-                  disabled={isSyncing}
-                  title="Sync seasons and episodes with IMDb"
-                  className="flex items-center gap-1 rounded bg-[#1A1A1A] hover:bg-purple-950/40 border border-neutral-700/60 hover:border-purple-500/50 px-1.5 py-0.5 text-[10px] font-semibold text-neutral-300 hover:text-purple-300 transition-all shrink-0 cursor-pointer disabled:opacity-50"
-                >
-                  <RefreshCw
-                    className={`h-2.5 w-2.5 ${
-                      isSyncing ? 'animate-spin text-purple-400' : 'text-purple-400'
-                    }`}
-                  />
-                  <span>{isSyncing ? 'Syncing...' : 'Sync'}</span>
-                </button>
-              )}
             </div>
           </div>
 
@@ -494,96 +440,78 @@ export function MovieCard({
               onMouseUp={(e) => e.stopPropagation()}
               onPointerDown={(e) => e.stopPropagation()}
             >
-              {/* Row 1: Episode badge, status buttons, and sync button */}
-              <div className="flex items-center justify-between gap-1.5 min-w-0">
-                <div className="flex items-center gap-1.5 min-w-0">
-                  {/* 1. Episode badge: e.g. S1 E1 or S1 E2 */}
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setIsSeriesModalOpen(true);
-                    }}
-                    title="Click to view/manage all episodes"
-                    className="rounded bg-purple-500/30 px-2 py-0.5 sm:px-2.5 sm:py-1 text-[11px] sm:text-xs font-bold text-purple-200 border border-purple-500/40 hover:bg-purple-500/50 transition-colors tracking-wide shrink-0 whitespace-nowrap"
-                  >
-                    S{activeSeriesEpisode.season} E{activeSeriesEpisode.episode}
-                  </button>
-
-                  {/* 2. Three status buttons: To do, Doing, Done */}
-                  <div className="flex items-center gap-0.5 rounded-lg bg-black/40 p-0.5 border border-purple-500/20 min-w-0">
-                    {(
-                      [
-                        {
-                          id: 'To do',
-                          label: 'To do',
-                          dot: 'bg-yellow-400',
-                          activeClass:
-                            'bg-yellow-500/25 text-yellow-300 border-yellow-500/40 font-bold shadow-sm',
-                        },
-                        {
-                          id: 'Doing',
-                          label: 'Doing',
-                          dot: 'bg-blue-400',
-                          activeClass:
-                            'bg-sky-500/25 text-sky-300 border-sky-500/40 font-bold shadow-sm',
-                        },
-                        {
-                          id: 'Done',
-                          label: 'Done',
-                          dot: 'bg-green-400',
-                          activeClass:
-                            'bg-emerald-500/25 text-emerald-300 border-emerald-500/40 font-bold shadow-sm',
-                        },
-                      ] as const
-                    ).map((btn) => {
-                      const isSelected = activeSeriesEpisode.status === btn.id;
-                      return (
-                        <button
-                          key={btn.id}
-                          type="button"
-                          disabled={isUpdatingProgress}
-                          onClick={(e) =>
-                            handleEpisodeStatusChange(
-                              e,
-                              activeSeriesEpisode.season,
-                              activeSeriesEpisode.episode,
-                              btn.id,
-                            )
-                          }
-                          className={`flex items-center justify-center gap-1 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md text-[10px] sm:text-[11px] whitespace-nowrap transition-all border ${
-                            isSelected
-                              ? btn.activeClass
-                              : 'border-transparent text-neutral-400 hover:text-white hover:bg-neutral-800/50'
-                          } disabled:opacity-50`}
-                        >
-                          <span
-                            className={`h-1.5 w-1.5 rounded-full shrink-0 ${btn.dot} ${
-                              isSelected ? 'ring-1 ring-current' : 'opacity-60'
-                            }`}
-                          />
-                          <span className="whitespace-nowrap">{btn.label}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* 3. Sync Button on Series Row */}
+              {/* Row 1: Episode badge and 3 status buttons placed next to each other */}
+              <div className="flex items-center gap-2 min-w-0">
+                {/* 1. Episode badge: e.g. S1 E1 or S1 E2 */}
                 <button
                   type="button"
-                  onClick={handleSyncSeries}
-                  disabled={isSyncing}
-                  title="Sync seasons and episodes with IMDb"
-                  className="flex items-center gap-1 rounded bg-black/40 hover:bg-purple-900/40 border border-purple-500/20 hover:border-purple-500/40 px-2 py-1 text-[10px] font-semibold text-purple-300 hover:text-white transition-all shrink-0 cursor-pointer ml-auto disabled:opacity-50"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsSeriesModalOpen(true);
+                  }}
+                  title="Click to view/manage all episodes"
+                  className="rounded bg-purple-500/30 px-2 py-0.5 sm:px-2.5 sm:py-1 text-[11px] sm:text-xs font-bold text-purple-200 border border-purple-500/40 hover:bg-purple-500/50 transition-colors tracking-wide shrink-0 whitespace-nowrap"
                 >
-                  <RefreshCw
-                    className={`h-2.5 w-2.5 ${
-                      isSyncing ? 'animate-spin text-purple-400' : 'text-purple-400'
-                    }`}
-                  />
-                  <span>{isSyncing ? 'Syncing...' : 'Sync'}</span>
+                  S{activeSeriesEpisode.season} E{activeSeriesEpisode.episode}
                 </button>
+
+                {/* 2. Three status buttons: To do, Doing, Done */}
+                <div className="flex items-center gap-0.5 rounded-lg bg-black/40 p-0.5 border border-purple-500/20 min-w-0">
+                  {(
+                    [
+                      {
+                        id: 'To do',
+                        label: 'To do',
+                        dot: 'bg-yellow-400',
+                        activeClass:
+                          'bg-yellow-500/25 text-yellow-300 border-yellow-500/40 font-bold shadow-sm',
+                      },
+                      {
+                        id: 'Doing',
+                        label: 'Doing',
+                        dot: 'bg-blue-400',
+                        activeClass:
+                          'bg-sky-500/25 text-sky-300 border-sky-500/40 font-bold shadow-sm',
+                      },
+                      {
+                        id: 'Done',
+                        label: 'Done',
+                        dot: 'bg-green-400',
+                        activeClass:
+                          'bg-emerald-500/25 text-emerald-300 border-emerald-500/40 font-bold shadow-sm',
+                      },
+                    ] as const
+                  ).map((btn) => {
+                    const isSelected = activeSeriesEpisode.status === btn.id;
+                    return (
+                      <button
+                        key={btn.id}
+                        type="button"
+                        disabled={isUpdatingProgress}
+                        onClick={(e) =>
+                          handleEpisodeStatusChange(
+                            e,
+                            activeSeriesEpisode.season,
+                            activeSeriesEpisode.episode,
+                            btn.id,
+                          )
+                        }
+                        className={`flex items-center justify-center gap-1 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md text-[10px] sm:text-[11px] whitespace-nowrap transition-all border ${
+                          isSelected
+                            ? btn.activeClass
+                            : 'border-transparent text-neutral-400 hover:text-white hover:bg-neutral-800/50'
+                        } disabled:opacity-50`}
+                      >
+                        <span
+                          className={`h-1.5 w-1.5 rounded-full shrink-0 ${btn.dot} ${
+                            isSelected ? 'ring-1 ring-current' : 'opacity-60'
+                          }`}
+                        />
+                        <span className="whitespace-nowrap">{btn.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
               {/* Row 2: Input hour and minute if episode status is Doing */}
