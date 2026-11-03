@@ -84,6 +84,23 @@ export interface DashboardStats {
   genres: { name: string; count: number }[];
 }
 
+export interface SyncSeriesResultItem {
+  id: string;
+  title: string;
+  imdbId: string;
+  imdbUrl: string;
+  releaseYear: number | null;
+  oldSeasons: number;
+  newSeasons: number;
+  oldEpisodes: number;
+  newEpisodes: number;
+  hasNewSeasons: boolean;
+  hasNewEpisodes: boolean;
+  newEpisodesCount: number;
+  status: 'NEW_SEASON' | 'EPISODES_UPDATED' | 'UP_TO_DATE' | 'ERROR';
+  errorMessage?: string;
+}
+
 export class MovieService {
   constructor(private dbGetter: () => any = getDb) {}
 
@@ -698,6 +715,8 @@ export class MovieService {
       oldSeasons: number;
       newSeasons: number;
     }>;
+    items: SyncSeriesResultItem[];
+    syncedAt: string;
   }> {
     const allSeries = await this.db
       .select()
@@ -712,11 +731,42 @@ export class MovieService {
       oldSeasons: number;
       newSeasons: number;
     }> = [];
+    const items: SyncSeriesResultItem[] = [];
 
     for (const s of allSeries) {
+      const oldSeas = s.totalSeasons || 0;
+      const oldEps = s.totalEpisodes || 0;
       try {
-        const oldSeas = s.totalSeasons || 0;
         const result = await this.syncSeriesWithImdb(s.id, userId);
+        const newSeas = result.movie.totalSeasons || oldSeas;
+        const newEps = result.movie.totalEpisodes || oldEps;
+        const hasNewSeasons = result.hasNewSeasons;
+        const newEpisodesCount = result.newEpisodesCount;
+        const hasNewEpisodes = newEpisodesCount > 0;
+
+        let itemStatus: SyncSeriesResultItem['status'] = 'UP_TO_DATE';
+        if (hasNewSeasons) {
+          itemStatus = 'NEW_SEASON';
+        } else if (hasNewEpisodes) {
+          itemStatus = 'EPISODES_UPDATED';
+        }
+
+        items.push({
+          id: s.id,
+          title: s.title,
+          imdbId: s.imdbId,
+          imdbUrl: s.imdbUrl,
+          releaseYear: s.releaseYear,
+          oldSeasons: oldSeas,
+          newSeasons: newSeas,
+          oldEpisodes: oldEps,
+          newEpisodes: newEps,
+          hasNewSeasons,
+          hasNewEpisodes,
+          newEpisodesCount,
+          status: itemStatus,
+        });
+
         if (result.updated) {
           updatedCount++;
         }
@@ -726,11 +776,26 @@ export class MovieService {
             id: s.id,
             title: s.title,
             oldSeasons: oldSeas,
-            newSeasons: result.movie.totalSeasons || oldSeas,
+            newSeasons: newSeas,
           });
         }
-      } catch {
-        // continue syncing remaining series
+      } catch (err: any) {
+        items.push({
+          id: s.id,
+          title: s.title,
+          imdbId: s.imdbId,
+          imdbUrl: s.imdbUrl,
+          releaseYear: s.releaseYear,
+          oldSeasons: oldSeas,
+          newSeasons: oldSeas,
+          oldEpisodes: oldEps,
+          newEpisodes: oldEps,
+          hasNewSeasons: false,
+          hasNewEpisodes: false,
+          newEpisodesCount: 0,
+          status: 'ERROR',
+          errorMessage: err.message || 'Sync failed',
+        });
       }
     }
 
@@ -739,6 +804,8 @@ export class MovieService {
       updatedCount,
       newSeasonsCount,
       seriesWithNewSeasons,
+      items,
+      syncedAt: new Date().toISOString(),
     };
   }
 }

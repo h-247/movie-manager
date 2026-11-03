@@ -500,12 +500,15 @@ export function SeriesProgressModal({
           const availableSeasons = Array.from(new Set(rows.map((r) => r.season))).sort((a, b) => a - b);
           if (availableSeasons.length <= 1) return null;
           return (
-            <div className="flex items-center gap-1.5 border-b border-neutral-800/80 px-6 py-2.5 bg-[#1b1b1b] overflow-x-auto no-scrollbar shrink-0">
+            <div
+              className="flex items-center gap-1.5 border-b border-neutral-800/80 px-6 py-2.5 bg-[#1b1b1b] overflow-x-auto shrink-0 [&::-webkit-scrollbar]:hidden"
+              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+            >
               <span className="text-neutral-400 text-xs font-medium mr-1 shrink-0">Seasons:</span>
               <button
                 type="button"
                 onClick={() => setSelectedSeasonFilter(null)}
-                className={`px-3 py-1 rounded-lg text-xs font-semibold whitespace-nowrap shrink-0 transition-all ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap shrink-0 transition-all ${
                   selectedSeasonFilter === null
                     ? 'bg-purple-600 text-white shadow-sm'
                     : 'bg-[#262626] text-neutral-400 hover:text-white hover:bg-neutral-800'
@@ -520,7 +523,7 @@ export function SeriesProgressModal({
                     key={s}
                     type="button"
                     onClick={() => setSelectedSeasonFilter(s)}
-                    className={`px-3 py-1 rounded-lg text-xs font-semibold whitespace-nowrap shrink-0 transition-all ${
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap shrink-0 transition-all ${
                       selectedSeasonFilter === s
                         ? 'bg-purple-600 text-white shadow-sm'
                         : 'bg-[#262626] text-neutral-400 hover:text-white hover:bg-neutral-800'

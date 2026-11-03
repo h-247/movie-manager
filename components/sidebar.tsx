@@ -1,4 +1,5 @@
 import React from 'react';
+import Link from 'next/link';
 import {
   PanelLeft,
   PanelLeftClose,
@@ -220,6 +221,15 @@ export function Sidebar({
                   </span>
                 </button>
               )}
+
+              {/* Sync Results Page Link */}
+              <Link
+                href="/sync-results"
+                className="flex w-full items-center justify-center gap-2 rounded-xl border border-neutral-700 bg-[#222222] px-3 py-1.5 text-xs font-semibold text-neutral-300 hover:bg-[#2c2c2c] hover:text-white transition-colors"
+                title="View sync results and new seasons report"
+              >
+                <span>View Sync Results</span>
+              </Link>
             </div>
 
             {/* Section: Search Input */}
