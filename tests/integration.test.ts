@@ -636,4 +636,68 @@ describe('Movie Watchlist Integration Tests', () => {
     expect(newSeasonEp).toBeDefined();
     expect(newSeasonEp.status).toBe('To do');
   });
+
+  it('17. Manages stremio links in series progress and preserves them in active episode', () => {
+    const mockSeriesWithStremio: Movie = {
+      id: 'series_stremio_test',
+      userId: 'user_123',
+      imdbId: 'tt2442560',
+      imdbUrl: 'https://www.imdb.com/title/tt2442560/',
+      tmdbId: 60574,
+      title: 'Peaky Blinders',
+      originalTitle: 'Peaky Blinders',
+      mediaType: 'SERIES',
+      releaseDate: '2013-09-12',
+      releaseYear: 2013,
+      posterPath: null,
+      overview: null,
+      runtimeMinutes: 60,
+      genres: JSON.stringify(['Crime', 'Drama']),
+      countries: JSON.stringify(['United Kingdom']),
+      status: 'DOING',
+      personalRating: null,
+      notes: null,
+      startedAt: null,
+      completedAt: null,
+      totalSeasons: 6,
+      totalEpisodes: 36,
+      currentSeason: 1,
+      currentEpisode: 2,
+      currentHour: 0,
+      currentMinute: 45,
+      seriesProgress: JSON.stringify([
+        {
+          id: 'ep-1-1',
+          season: 1,
+          episode: 1,
+          status: 'Done',
+          hour: 0,
+          minute: 0,
+          stremio: 'stremio:///detail/series/tt2442560/1/1',
+        },
+        {
+          id: 'ep-1-2',
+          season: 1,
+          episode: 2,
+          status: 'Doing',
+          hour: 0,
+          minute: 45,
+          stremio: 'https://web.stremio.com/#/detail/series/tt2442560/1/2',
+        },
+      ]),
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+    };
+
+    const episodes = getSeriesEpisodes(mockSeriesWithStremio);
+    expect(episodes).toHaveLength(2);
+    expect(episodes[0].stremio).toBe('stremio:///detail/series/tt2442560/1/1');
+    expect(episodes[1].stremio).toBe('https://web.stremio.com/#/detail/series/tt2442560/1/2');
+
+    const activeEp = getActiveSeriesEpisode(mockSeriesWithStremio, episodes);
+    expect(activeEp.season).toBe(1);
+    expect(activeEp.episode).toBe(2);
+    expect(activeEp.status).toBe('Doing');
+    expect(activeEp.stremio).toBe('https://web.stremio.com/#/detail/series/tt2442560/1/2');
+  });
 });

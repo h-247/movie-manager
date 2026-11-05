@@ -18,6 +18,14 @@ import { getFullPosterUrl } from '@/lib/tmdb';
 import { SeriesProgressModal } from './series-progress-modal';
 import { sendPushNotification, requestNotificationPermission } from '@/lib/push-notifications';
 
+function YouTubeIcon({ className = 'h-4 w-4' }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
+    </svg>
+  );
+}
+
 function parseListField(val: string | null | undefined): string[] {
   if (!val) return [];
   if (Array.isArray(val)) return val;
@@ -451,10 +459,27 @@ export function MovieDetailsDialog({
                 /* Metadata View */
                 <>
                   <div>
-                    <div className="flex items-center gap-2">
-                      <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-[#ECECEC]">
-                        {movie.title}
-                      </h2>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const query = encodeURIComponent(
+                            `${movie.title} ${movie.releaseYear ? `${movie.releaseYear} ` : ''}official trailer`,
+                          );
+                          if (typeof window !== 'undefined') {
+                            window.open(
+                              `https://www.youtube.com/results?search_query=${query}`,
+                              '_blank',
+                              'noopener,noreferrer',
+                            );
+                          }
+                        }}
+                        title={`Click to show best trailer for "${movie.title}" in YouTube`}
+                        className="group flex items-center gap-2 text-left text-xl sm:text-2xl font-bold tracking-tight text-[#ECECEC] hover:text-red-400 transition-colors"
+                      >
+                        <span>{movie.title}</span>
+                        <YouTubeIcon className="h-5 w-5 text-red-500 opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all shrink-0" />
+                      </button>
                       <span
                         className={`rounded px-2 py-0.5 text-xs font-semibold ${
                           movie.mediaType === 'SERIES'
@@ -561,9 +586,38 @@ export function MovieDetailsDialog({
                             )}
                           </div>
                           <div className="flex items-center gap-2">
-                            <span className="rounded bg-purple-500/25 px-2 py-0.5 text-xs font-bold text-purple-200 border border-purple-500/40 tracking-wide">
-                              S{curSeason} E{curEpisode}
-                            </span>
+                            {(() => {
+                              let curStremioLink = '';
+                              if (movie.seriesProgress) {
+                                try {
+                                  const parsed = JSON.parse(movie.seriesProgress);
+                                  const match = parsed.find(
+                                    (p: any) => p.season === curSeason && p.episode === curEpisode,
+                                  );
+                                  if (match?.stremio) curStremioLink = match.stremio.trim();
+                                } catch {}
+                              }
+                              return (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (curStremioLink && typeof window !== 'undefined') {
+                                      window.open(curStremioLink, '_blank', 'noopener,noreferrer');
+                                    }
+                                    onUpdate(movie.id, { status: 'DOING' });
+                                  }}
+                                  title={
+                                    curStremioLink
+                                      ? `Open Stremio & set Doing (S${curSeason} E${curEpisode})`
+                                      : `Set Doing (S${curSeason} E${curEpisode})`
+                                  }
+                                  className="rounded bg-purple-500/25 px-2 py-0.5 text-xs font-bold text-purple-200 border border-purple-500/40 hover:bg-purple-500/40 transition-colors tracking-wide flex items-center gap-1"
+                                >
+                                  <span>S{curSeason} E{curEpisode}</span>
+                                  {curStremioLink && <ExternalLink className="h-3 w-3 text-purple-300 shrink-0" />}
+                                </button>
+                              );
+                            })()}
                             <button
                               type="button"
                               onClick={handleSyncWithImdb}

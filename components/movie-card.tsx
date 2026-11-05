@@ -1,8 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { Star, Globe, Clock } from 'lucide-react';
+import { Star, Globe, Clock, ExternalLink, Tv } from 'lucide-react';
 import type { Movie, WatchStatus } from '@/db/schema';
 import { StatusBadge } from './status-badge';
 import { SeriesProgressModal } from './series-progress-modal';
+
+function YouTubeIcon({ className = 'h-4 w-4' }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
+    </svg>
+  );
+}
 
 function parseListField(val: string | null | undefined): string[] {
   if (!val) return [];
@@ -27,6 +35,7 @@ export interface EpisodeItem {
   status: 'To do' | 'Doing' | 'Done';
   hour?: number;
   minute?: number;
+  stremio?: string;
 }
 
 export function getSeriesEpisodes(movie: Movie): EpisodeItem[] {
@@ -46,6 +55,7 @@ export function getSeriesEpisodes(movie: Movie): EpisodeItem[] {
           status: item.status === 'Done' ? 'Done' : item.status === 'Doing' ? 'Doing' : 'To do',
           hour: typeof item.hour === 'number' && item.hour >= 0 ? Math.min(item.hour, 99) : 0,
           minute: typeof item.minute === 'number' && item.minute >= 0 ? Math.min(item.minute, 59) : 0,
+          stremio: typeof item.stremio === 'string' ? item.stremio : typeof item.stremioLink === 'string' ? item.stremioLink : '',
         }));
       }
     } catch {
@@ -76,6 +86,7 @@ export function getSeriesEpisodes(movie: Movie): EpisodeItem[] {
           status: epStatus,
           hour: 0,
           minute: 0,
+          stremio: '',
         });
       }
     }
@@ -258,6 +269,7 @@ export function MovieCard({
               newEpStatus === 'Doing'
                 ? (item.minute ?? Math.max(0, Math.min(59, parseInt(rawMinute) || 0)))
                 : 0,
+            stremio: item.stremio || '',
           };
         }
         return item;
@@ -270,6 +282,7 @@ export function MovieCard({
           status: newEpStatus,
           hour: newEpStatus === 'Doing' ? Math.max(0, Math.min(99, parseInt(rawHour) || 0)) : 0,
           minute: newEpStatus === 'Doing' ? Math.max(0, Math.min(59, parseInt(rawMinute) || 0)) : 0,
+          stremio: '',
         });
         updatedEpisodes.sort((a, b) => a.season - b.season || a.episode - b.episode);
       }
@@ -375,13 +388,28 @@ export function MovieCard({
         {/* Card Header: Title, Series/Movie badge, Country, and Movie Status next to each other */}
         <div className="flex items-center justify-between gap-2 pb-2.5 mb-2.5 border-b border-neutral-800/80">
           <div className="flex items-center gap-2 min-w-0 flex-1 flex-wrap">
-            {/* Title */}
-            <h3
-              className="text-base font-bold text-white group-hover:text-purple-300 leading-snug transition-colors line-clamp-1"
-              title={movie.title}
+            {/* Title - click to show best trailer in YouTube */}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                const query = encodeURIComponent(
+                  `${movie.title} ${movie.releaseYear ? `${movie.releaseYear} ` : ''}official trailer`,
+                );
+                if (typeof window !== 'undefined') {
+                  window.open(
+                    `https://www.youtube.com/results?search_query=${query}`,
+                    '_blank',
+                    'noopener,noreferrer',
+                  );
+                }
+              }}
+              title={`Click to show best trailer for "${movie.title}" in YouTube`}
+              className="group/title flex items-center gap-1.5 text-left text-base font-bold text-white hover:text-red-400 focus:outline-none transition-colors line-clamp-1"
             >
-              {movie.title}
-            </h3>
+              <span className="truncate">{movie.title}</span>
+              <YouTubeIcon className="h-4 w-4 text-red-500 shrink-0 opacity-75 group-hover/title:opacity-100 group-hover/title:scale-110 transition-all" />
+            </button>
 
             {/* Badges cluster */}
             <div className="flex items-center gap-1.5 flex-wrap">
@@ -442,17 +470,38 @@ export function MovieCard({
             >
               {/* Row 1: Episode badge and 3 status buttons placed next to each other */}
               <div className="flex items-center gap-2 min-w-0">
-                {/* 1. Episode badge: e.g. S1 E1 or S1 E2 */}
+                {/* 1. Episode badge: e.g. S1 E1 or S1 E2 - click opens stremio link & marks as doing */}
                 <button
                   type="button"
-                  onClick={(e) => {
+                  onClick={async (e) => {
                     e.stopPropagation();
-                    setIsSeriesModalOpen(true);
+                    const stremioLink = activeSeriesEpisode.stremio?.trim();
+                    if (stremioLink && typeof window !== 'undefined') {
+                      window.open(stremioLink, '_blank', 'noopener,noreferrer');
+                    }
+                    if (activeSeriesEpisode.status !== 'Doing') {
+                      await handleEpisodeStatusChange(
+                        e,
+                        activeSeriesEpisode.season,
+                        activeSeriesEpisode.episode,
+                        'Doing',
+                      );
+                    }
+                    if (!stremioLink) {
+                      setIsSeriesModalOpen(true);
+                    }
                   }}
-                  title="Click to view/manage all episodes"
-                  className="rounded bg-purple-500/30 px-2 py-0.5 sm:px-2.5 sm:py-1 text-[11px] sm:text-xs font-bold text-purple-200 border border-purple-500/40 hover:bg-purple-500/50 transition-colors tracking-wide shrink-0 whitespace-nowrap"
+                  title={
+                    activeSeriesEpisode.stremio
+                      ? `Open Stremio & set Doing (S${activeSeriesEpisode.season} E${activeSeriesEpisode.episode})`
+                      : `Set Doing & manage episodes (S${activeSeriesEpisode.season} E${activeSeriesEpisode.episode})`
+                  }
+                  className="rounded bg-purple-500/30 px-2 py-0.5 sm:px-2.5 sm:py-1 text-[11px] sm:text-xs font-bold text-purple-200 border border-purple-500/40 hover:bg-purple-500/50 transition-colors tracking-wide shrink-0 whitespace-nowrap flex items-center gap-1.5"
                 >
-                  S{activeSeriesEpisode.season} E{activeSeriesEpisode.episode}
+                  <span>S{activeSeriesEpisode.season} E{activeSeriesEpisode.episode}</span>
+                  {activeSeriesEpisode.stremio && (
+                    <ExternalLink className="h-3 w-3 text-purple-300 shrink-0" />
+                  )}
                 </button>
 
                 {/* 2. Three status buttons: To do, Doing, Done */}
@@ -512,6 +561,19 @@ export function MovieCard({
                     );
                   })}
                 </div>
+
+                {/* 3. Manage Series Progress modal button */}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsSeriesModalOpen(true);
+                  }}
+                  title="Manage all episodes and Stremio links"
+                  className="ml-auto flex h-6 w-6 items-center justify-center rounded-md text-neutral-400 hover:text-purple-300 hover:bg-purple-500/20 transition-colors shrink-0"
+                >
+                  <Tv className="h-3.5 w-3.5" />
+                </button>
               </div>
 
               {/* Row 2: Input hour and minute if episode status is Doing */}

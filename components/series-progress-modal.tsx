@@ -13,6 +13,7 @@ import {
   AlertCircle,
   RefreshCw,
   Bell,
+  ExternalLink,
 } from 'lucide-react';
 import type { Movie } from '@/db/schema';
 import { sendPushNotification, requestNotificationPermission } from '@/lib/push-notifications';
@@ -26,6 +27,7 @@ export interface EpisodeProgressRow {
   status: SeriesEpisodeStatus;
   hour: number;
   minute: number;
+  stremio?: string;
 }
 
 interface SeriesProgressModalProps {
@@ -76,6 +78,7 @@ export function SeriesProgressModal({
             status: item.status === 'Done' ? 'Done' : item.status === 'Doing' ? 'Doing' : 'To do',
             hour: typeof item.hour === 'number' && item.hour >= 0 ? Math.min(item.hour, 99) : 0,
             minute: typeof item.minute === 'number' && item.minute >= 0 ? Math.min(item.minute, 59) : 0,
+            stremio: typeof item.stremio === 'string' ? item.stremio : typeof item.stremioLink === 'string' ? item.stremioLink : '',
           }));
 
           setRows(loadedRows);
@@ -119,6 +122,7 @@ export function SeriesProgressModal({
           status: epStatus,
           hour: epHour,
           minute: epMin,
+          stremio: '',
         });
       }
     }
@@ -134,6 +138,7 @@ export function SeriesProgressModal({
               status: 'To do',
               hour: 0,
               minute: 0,
+              stremio: '',
             },
           ],
     );
@@ -188,6 +193,7 @@ export function SeriesProgressModal({
           status: 'To do',
           hour: 0,
           minute: 0,
+          stremio: '',
         },
       ]);
       return;
@@ -212,6 +218,7 @@ export function SeriesProgressModal({
         status: 'To do',
         hour: 0,
         minute: 0,
+        stremio: '',
       },
     ]);
   };
@@ -244,6 +251,7 @@ export function SeriesProgressModal({
             status: 'To do',
             hour: 0,
             minute: 0,
+            stremio: '',
           });
         }
       }
@@ -376,6 +384,7 @@ export function SeriesProgressModal({
             status: r.status,
             hour: r.status === 'Doing' ? r.hour : 0,
             minute: r.status === 'Doing' ? r.minute : 0,
+            stremio: r.stremio ? r.stremio.trim() : '',
           })),
         ),
       };
@@ -402,7 +411,7 @@ export function SeriesProgressModal({
       }}
     >
       <div
-        className="w-full max-w-3xl max-h-[90vh] flex flex-col rounded-2xl border border-neutral-800 bg-[#1A1A1A] text-white shadow-2xl overflow-hidden"
+        className="w-full max-w-4xl max-h-[90vh] flex flex-col rounded-2xl border border-neutral-800 bg-[#1A1A1A] text-white shadow-2xl overflow-hidden"
         role="dialog"
         aria-modal="true"
         aria-labelledby="series-progress-title"
@@ -551,11 +560,12 @@ export function SeriesProgressModal({
             <table className="w-full border-collapse text-left text-xs table-fixed">
               <thead className="sticky top-0 z-10 bg-[#282828] shadow-sm">
                 <tr className="border-b border-neutral-800 bg-[#282828] text-neutral-300 font-semibold uppercase tracking-wider text-[11px]">
-                  <th className="py-2.5 px-3 w-20">Season</th>
-                  <th className="py-2.5 px-3 w-20">Episode</th>
-                  <th className="py-2.5 px-3 w-32">Status</th>
-                  <th className="py-2.5 px-3">Hour &amp; Minute (Doing)</th>
-                  <th className="py-2.5 px-2 w-14 text-center">Action</th>
+                  <th className="py-2.5 px-3 w-16">Season</th>
+                  <th className="py-2.5 px-3 w-16">Episode</th>
+                  <th className="py-2.5 px-3 w-28">Status</th>
+                  <th className="py-2.5 px-3 w-44">Hour &amp; Minute (Doing)</th>
+                  <th className="py-2.5 px-3">Stremio</th>
+                  <th className="py-2.5 px-2 w-12 text-center">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-800/80">
@@ -715,6 +725,38 @@ export function SeriesProgressModal({
                             <span className="text-[10px] text-neutral-600 italic ml-1">
                               (Doing only)
                             </span>
+                          )}
+                        </div>
+                      </td>
+
+                      {/* Column 5: Stremio link */}
+                      <td className="py-2.5 px-3">
+                        <div className="flex items-center gap-1.5">
+                          <input
+                            type="text"
+                            value={row.stremio || ''}
+                            onChange={(e) =>
+                              handleRowChange(row.id, {
+                                stremio: e.target.value,
+                              })
+                            }
+                            placeholder="stremio link..."
+                            className="w-full rounded-md bg-[#161616] border border-neutral-700/80 px-2 py-1 text-xs text-white placeholder-neutral-500 focus:border-purple-500 focus:outline-none transition-colors"
+                          />
+                          {row.stremio?.trim() && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const link = row.stremio?.trim();
+                                if (link && typeof window !== 'undefined') {
+                                  window.open(link, '_blank', 'noopener,noreferrer');
+                                }
+                              }}
+                              title="Open Stremio link"
+                              className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-purple-500/20 text-purple-300 hover:bg-purple-500/40 hover:text-white transition-colors"
+                            >
+                              <ExternalLink className="h-3 w-3" />
+                            </button>
                           )}
                         </div>
                       </td>
