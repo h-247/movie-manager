@@ -348,7 +348,7 @@ export default function HomePage() {
           <section aria-label="Movie collection">
             {isLoading && movies.length === 0 ? (
               /* Skeleton Loading Grid without photo */
-              <div className="grid gap-6 [grid-template-columns:repeat(auto-fill,minmax(330px,1fr))]">
+              <div className="grid gap-6 [grid-template-columns:repeat(auto-fill,minmax(350px,1fr))]">
                 {[...Array(6)].map((_, i) => (
                   <div
                     key={i}
@@ -368,7 +368,7 @@ export default function HomePage() {
               </div>
             ) : movies.length > 0 ? (
               /* Movie Cards Grid */
-              <div className="grid gap-6 [grid-template-columns:repeat(auto-fill,minmax(330px,1fr))]">
+              <div className="grid gap-6 [grid-template-columns:repeat(auto-fill,minmax(350px,1fr))]">
                 {movies.map((movie) => (
                   <MovieCard
                     key={movie.id}

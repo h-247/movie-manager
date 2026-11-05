@@ -375,12 +375,12 @@ export function MovieCard({
   return (
     <div
       onClick={() => onOpenDetails(movie)}
-      className="group relative flex flex-col justify-between rounded-2xl border border-neutral-800 bg-[#262626] p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-neutral-700 hover:shadow-xl hover:shadow-black/50 cursor-pointer"
+      className="group relative flex flex-col justify-between rounded-2xl border border-neutral-800 bg-[#262626] p-3.5 sm:p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-neutral-700 hover:shadow-xl hover:shadow-black/50 cursor-pointer"
     >
       <div>
         {/* Card Header: Title, Series/Movie badge, Country, and Movie Status next to each other on same line */}
-        <div className="flex items-center justify-between gap-2 pb-2.5 mb-2.5 border-b border-neutral-800/80">
-          <div className="flex items-center gap-1.5 min-w-0 flex-1 overflow-hidden">
+        <div className="flex items-center justify-between gap-1.5 pb-2.5 mb-2.5 border-b border-neutral-800/80">
+          <div className="flex items-center gap-1 sm:gap-1.5 min-w-0 flex-1 overflow-hidden">
             {/* Title - click to show best trailer in YouTube */}
             <button
               type="button"
@@ -389,7 +389,7 @@ export function MovieCard({
                 openBestTrailer(movie.title, movie.releaseYear);
               }}
               title={`Click to show best trailer for "${movie.title}" in YouTube`}
-              className="group/title text-left text-base font-bold text-white hover:text-red-400 focus:outline-none transition-colors shrink-0 max-w-[65%] truncate"
+              className="group/title text-left text-[15px] sm:text-base font-bold tracking-tight text-white hover:text-red-400 focus:outline-none transition-colors truncate min-w-0 shrink"
             >
               <span className="truncate">{movie.title}</span>
             </button>
@@ -416,7 +416,7 @@ export function MovieCard({
             {/* Country (Full Name without truncation) */}
             {countriesList.length > 0 && (
               <span
-                className="rounded bg-[#1A1A1A] border border-neutral-700/60 px-1.5 py-0.5 text-[10px] font-medium text-neutral-300 min-w-0 shrink truncate whitespace-nowrap"
+                className="rounded bg-[#1A1A1A] border border-neutral-700/60 px-1.5 py-0.5 text-[10px] font-medium tracking-tight text-neutral-300 shrink-0 whitespace-nowrap"
                 title={countriesList.join(', ')}
               >
                 {countriesList.join(', ')}
