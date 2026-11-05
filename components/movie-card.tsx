@@ -377,9 +377,9 @@ export function MovieCard({
       className="group relative flex flex-col justify-between rounded-2xl border border-neutral-800 bg-[#262626] p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-neutral-700 hover:shadow-xl hover:shadow-black/50 cursor-pointer"
     >
       <div>
-        {/* Card Header: Title, Series/Movie badge, Country, and Movie Status next to each other */}
+        {/* Card Header: Title, Series/Movie badge, Country, and Movie Status next to each other on same line */}
         <div className="flex items-center justify-between gap-2 pb-2.5 mb-2.5 border-b border-neutral-800/80">
-          <div className="flex items-center gap-2 min-w-0 flex-1 flex-wrap">
+          <div className="flex items-center gap-2 min-w-0 flex-1 overflow-hidden">
             {/* Title - click to show best trailer in YouTube */}
             <button
               type="button"
@@ -397,53 +397,53 @@ export function MovieCard({
                 }
               }}
               title={`Click to show best trailer for "${movie.title}" in YouTube`}
-              className="group/title text-left text-base font-bold text-white hover:text-red-400 focus:outline-none transition-colors line-clamp-1"
+              className="group/title text-left text-base font-bold text-white hover:text-red-400 focus:outline-none transition-colors truncate min-w-0 shrink"
             >
               <span className="truncate">{movie.title}</span>
             </button>
 
-            {/* Badges cluster */}
-            <div className="flex items-center gap-1.5 flex-wrap">
-              {/* Series (or Movie) */}
-              <button
-                type="button"
-                onClick={(e) => {
-                  if (movie.mediaType === 'SERIES') {
-                    e.stopPropagation();
-                    setIsSeriesModalOpen(true);
-                  }
-                }}
-                className={`rounded px-1.5 py-0.5 text-[10px] font-semibold border shrink-0 whitespace-nowrap ${
-                  movie.mediaType === 'SERIES'
-                    ? 'bg-purple-500/20 text-purple-300 border-purple-500/30 hover:bg-purple-500/30 cursor-pointer'
-                    : 'bg-blue-500/20 text-blue-300 border-blue-500/30'
-                }`}
-                title={movie.mediaType === 'SERIES' ? 'Click to manage series progress' : undefined}
-              >
-                {movie.mediaType === 'SERIES' ? 'Series' : 'Movie'}
-              </button>
-
-              {/* Country (Full Name without truncation) */}
-              {countriesList.length > 0 && (
-                <span className="rounded bg-[#1A1A1A] border border-neutral-700/60 px-1.5 py-0.5 text-[10px] font-medium text-neutral-300 shrink-0 whitespace-nowrap">
-                  {countriesList.join(', ')}
-                </span>
-              )}
-
-              {/* Movie Status */}
-              <StatusBadge
-                status={displayStatus}
-                size="sm"
-                onClick={
-                  movie.mediaType !== 'SERIES'
-                    ? (e) => {
-                        e?.stopPropagation();
-                        handleMovieStatusCycle(e);
-                      }
-                    : undefined
+            {/* Series (or Movie) */}
+            <button
+              type="button"
+              onClick={(e) => {
+                if (movie.mediaType === 'SERIES') {
+                  e.stopPropagation();
+                  setIsSeriesModalOpen(true);
                 }
-              />
-            </div>
+              }}
+              className={`rounded px-1.5 py-0.5 text-[10px] font-semibold border shrink-0 whitespace-nowrap ${
+                movie.mediaType === 'SERIES'
+                  ? 'bg-purple-500/20 text-purple-300 border-purple-500/30 hover:bg-purple-500/30 cursor-pointer'
+                  : 'bg-blue-500/20 text-blue-300 border-blue-500/30'
+              }`}
+              title={movie.mediaType === 'SERIES' ? 'Click to manage series progress' : undefined}
+            >
+              {movie.mediaType === 'SERIES' ? 'Series' : 'Movie'}
+            </button>
+
+            {/* Country (Full Name without truncation) */}
+            {countriesList.length > 0 && (
+              <span
+                className="rounded bg-[#1A1A1A] border border-neutral-700/60 px-1.5 py-0.5 text-[10px] font-medium text-neutral-300 shrink-0 whitespace-nowrap"
+                title={countriesList.join(', ')}
+              >
+                {countriesList.join(', ')}
+              </span>
+            )}
+
+            {/* Movie Status */}
+            <StatusBadge
+              status={displayStatus}
+              size="sm"
+              onClick={
+                movie.mediaType !== 'SERIES'
+                  ? (e) => {
+                      e?.stopPropagation();
+                      handleMovieStatusCycle(e);
+                    }
+                  : undefined
+              }
+            />
           </div>
 
           {movie.personalRating && (
@@ -506,21 +506,18 @@ export function MovieCard({
                       {
                         id: 'To do',
                         label: 'To do',
-                        dot: 'bg-yellow-400',
                         activeClass:
                           'bg-yellow-500/25 text-yellow-300 border-yellow-500/40 font-bold shadow-sm',
                       },
                       {
                         id: 'Doing',
                         label: 'Doing',
-                        dot: 'bg-blue-400',
                         activeClass:
                           'bg-sky-500/25 text-sky-300 border-sky-500/40 font-bold shadow-sm',
                       },
                       {
                         id: 'Done',
                         label: 'Done',
-                        dot: 'bg-green-400',
                         activeClass:
                           'bg-emerald-500/25 text-emerald-300 border-emerald-500/40 font-bold shadow-sm',
                       },
@@ -540,17 +537,12 @@ export function MovieCard({
                             btn.id,
                           )
                         }
-                        className={`flex items-center justify-center gap-1 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md text-[10px] sm:text-[11px] whitespace-nowrap transition-all border ${
+                        className={`flex items-center justify-center px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md text-[10px] sm:text-[11px] whitespace-nowrap transition-all border ${
                           isSelected
                             ? btn.activeClass
                             : 'border-transparent text-neutral-400 hover:text-white hover:bg-neutral-800/50'
                         } disabled:opacity-50`}
                       >
-                        <span
-                          className={`h-1.5 w-1.5 rounded-full shrink-0 ${btn.dot} ${
-                            isSelected ? 'ring-1 ring-current' : 'opacity-60'
-                          }`}
-                        />
                         <span className="whitespace-nowrap">{btn.label}</span>
                       </button>
                     );

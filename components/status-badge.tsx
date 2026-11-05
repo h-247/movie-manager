@@ -6,6 +6,7 @@ interface StatusBadgeProps {
   size?: 'sm' | 'md' | 'lg';
   className?: string;
   onClick?: (e?: React.MouseEvent) => void;
+  showDot?: boolean;
 }
 
 export function StatusBadge({
@@ -13,6 +14,7 @@ export function StatusBadge({
   size = 'md',
   className = '',
   onClick,
+  showDot = false,
 }: StatusBadgeProps) {
   const config = {
     TO_DO: {
@@ -40,9 +42,9 @@ export function StatusBadge({
   };
 
   const sizeClasses = {
-    sm: 'text-xs px-2 py-0.5 gap-1.5',
-    md: 'text-xs px-2.5 py-1 gap-1.5 font-medium',
-    lg: 'text-sm px-3 py-1.5 gap-2 font-medium',
+    sm: 'text-xs px-2.5 py-0.5',
+    md: 'text-xs px-3 py-1 font-medium',
+    lg: 'text-sm px-3.5 py-1.5 font-medium',
   }[size];
 
   const Component = onClick ? 'button' : 'span';
@@ -51,13 +53,15 @@ export function StatusBadge({
     <Component
       type={onClick ? 'button' : undefined}
       onClick={onClick}
-      className={`inline-flex items-center shrink-0 whitespace-nowrap rounded-full border transition-colors ${config.badgeClass} ${sizeClasses} ${
+      className={`inline-flex items-center justify-center shrink-0 whitespace-nowrap rounded-full border transition-colors ${config.badgeClass} ${sizeClasses} ${
         onClick ? 'cursor-pointer hover:opacity-90' : ''
       } ${className}`}
     >
-      <span
-        className={`h-1.5 w-1.5 rounded-full ${config.dotColor} shrink-0`}
-      />
+      {showDot && (
+        <span
+          className={`h-1.5 w-1.5 rounded-full ${config.dotColor} shrink-0 mr-1.5`}
+        />
+      )}
       <span className="whitespace-nowrap">{config.label}</span>
     </Component>
   );
