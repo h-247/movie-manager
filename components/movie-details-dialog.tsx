@@ -18,14 +18,6 @@ import { getFullPosterUrl } from '@/lib/tmdb';
 import { SeriesProgressModal } from './series-progress-modal';
 import { sendPushNotification, requestNotificationPermission } from '@/lib/push-notifications';
 
-function YouTubeIcon({ className = 'h-4 w-4' }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-      <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
-    </svg>
-  );
-}
-
 function parseListField(val: string | null | undefined): string[] {
   if (!val) return [];
   if (Array.isArray(val)) return val;
@@ -475,10 +467,9 @@ export function MovieDetailsDialog({
                           }
                         }}
                         title={`Click to show best trailer for "${movie.title}" in YouTube`}
-                        className="group flex items-center gap-2 text-left text-xl sm:text-2xl font-bold tracking-tight text-[#ECECEC] hover:text-red-400 transition-colors"
+                        className="group text-left text-xl sm:text-2xl font-bold tracking-tight text-[#ECECEC] hover:text-red-400 transition-colors"
                       >
                         <span>{movie.title}</span>
-                        <YouTubeIcon className="h-5 w-5 text-red-500 opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all shrink-0" />
                       </button>
                       <span
                         className={`rounded px-2 py-0.5 text-xs font-semibold ${

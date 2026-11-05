@@ -1,16 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Star, Globe, Clock, ExternalLink, Tv } from 'lucide-react';
+import { Star, Clock } from 'lucide-react';
 import type { Movie, WatchStatus } from '@/db/schema';
 import { StatusBadge } from './status-badge';
 import { SeriesProgressModal } from './series-progress-modal';
-
-function YouTubeIcon({ className = 'h-4 w-4' }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-      <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
-    </svg>
-  );
-}
 
 function parseListField(val: string | null | undefined): string[] {
   if (!val) return [];
@@ -405,30 +397,36 @@ export function MovieCard({
                 }
               }}
               title={`Click to show best trailer for "${movie.title}" in YouTube`}
-              className="group/title flex items-center gap-1.5 text-left text-base font-bold text-white hover:text-red-400 focus:outline-none transition-colors line-clamp-1"
+              className="group/title text-left text-base font-bold text-white hover:text-red-400 focus:outline-none transition-colors line-clamp-1"
             >
               <span className="truncate">{movie.title}</span>
-              <YouTubeIcon className="h-4 w-4 text-red-500 shrink-0 opacity-75 group-hover/title:opacity-100 group-hover/title:scale-110 transition-all" />
             </button>
 
             {/* Badges cluster */}
             <div className="flex items-center gap-1.5 flex-wrap">
               {/* Series (or Movie) */}
-              <span
+              <button
+                type="button"
+                onClick={(e) => {
+                  if (movie.mediaType === 'SERIES') {
+                    e.stopPropagation();
+                    setIsSeriesModalOpen(true);
+                  }
+                }}
                 className={`rounded px-1.5 py-0.5 text-[10px] font-semibold border shrink-0 whitespace-nowrap ${
                   movie.mediaType === 'SERIES'
-                    ? 'bg-purple-500/20 text-purple-300 border-purple-500/30'
+                    ? 'bg-purple-500/20 text-purple-300 border-purple-500/30 hover:bg-purple-500/30 cursor-pointer'
                     : 'bg-blue-500/20 text-blue-300 border-blue-500/30'
                 }`}
+                title={movie.mediaType === 'SERIES' ? 'Click to manage series progress' : undefined}
               >
                 {movie.mediaType === 'SERIES' ? 'Series' : 'Movie'}
-              </span>
+              </button>
 
               {/* Country (Full Name without truncation) */}
               {countriesList.length > 0 && (
-                <span className="flex items-center gap-1 rounded bg-[#1A1A1A] border border-neutral-700/60 px-1.5 py-0.5 text-[10px] font-medium text-neutral-300 shrink-0 whitespace-nowrap">
-                  <Globe className="h-2.5 w-2.5 text-cyan-400 shrink-0" />
-                  <span>{countriesList.join(', ')}</span>
+                <span className="rounded bg-[#1A1A1A] border border-neutral-700/60 px-1.5 py-0.5 text-[10px] font-medium text-neutral-300 shrink-0 whitespace-nowrap">
+                  {countriesList.join(', ')}
                 </span>
               )}
 
@@ -496,12 +494,9 @@ export function MovieCard({
                       ? `Open Stremio & set Doing (S${activeSeriesEpisode.season} E${activeSeriesEpisode.episode})`
                       : `Set Doing & manage episodes (S${activeSeriesEpisode.season} E${activeSeriesEpisode.episode})`
                   }
-                  className="rounded bg-purple-500/30 px-2 py-0.5 sm:px-2.5 sm:py-1 text-[11px] sm:text-xs font-bold text-purple-200 border border-purple-500/40 hover:bg-purple-500/50 transition-colors tracking-wide shrink-0 whitespace-nowrap flex items-center gap-1.5"
+                  className="rounded bg-purple-500/30 px-2 py-0.5 sm:px-2.5 sm:py-1 text-[11px] sm:text-xs font-bold text-purple-200 border border-purple-500/40 hover:bg-purple-500/50 transition-colors tracking-wide shrink-0 whitespace-nowrap"
                 >
-                  <span>S{activeSeriesEpisode.season} E{activeSeriesEpisode.episode}</span>
-                  {activeSeriesEpisode.stremio && (
-                    <ExternalLink className="h-3 w-3 text-purple-300 shrink-0" />
-                  )}
+                  S{activeSeriesEpisode.season} E{activeSeriesEpisode.episode}
                 </button>
 
                 {/* 2. Three status buttons: To do, Doing, Done */}
@@ -561,19 +556,6 @@ export function MovieCard({
                     );
                   })}
                 </div>
-
-                {/* 3. Manage Series Progress modal button */}
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setIsSeriesModalOpen(true);
-                  }}
-                  title="Manage all episodes and Stremio links"
-                  className="ml-auto flex h-6 w-6 items-center justify-center rounded-md text-neutral-400 hover:text-purple-300 hover:bg-purple-500/20 transition-colors shrink-0"
-                >
-                  <Tv className="h-3.5 w-3.5" />
-                </button>
               </div>
 
               {/* Row 2: Input hour and minute if episode status is Doing */}
