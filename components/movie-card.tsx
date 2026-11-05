@@ -378,9 +378,9 @@ export function MovieCard({
       className="group relative flex flex-col justify-between rounded-2xl border border-neutral-800 bg-[#262626] p-3.5 sm:p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-neutral-700 hover:shadow-xl hover:shadow-black/50 cursor-pointer"
     >
       <div>
-        {/* Card Header: Title, Series/Movie badge, Country, and Movie Status next to each other on same line */}
-        <div className="flex items-center justify-between gap-1.5 pb-2.5 mb-2.5 border-b border-neutral-800/80">
-          <div className="flex items-center gap-1 sm:gap-1.5 min-w-0 flex-1 overflow-hidden">
+        {/* Card Header: Title, Series/Movie badge, Country, and Movie Status */}
+        <div className="flex items-start justify-between gap-2 pb-2.5 mb-2.5 border-b border-neutral-800/80">
+          <div className="flex items-center gap-1.5 flex-wrap min-w-0 flex-1">
             {/* Title - click to show best trailer in YouTube */}
             <button
               type="button"
@@ -389,9 +389,9 @@ export function MovieCard({
                 openBestTrailer(movie.title, movie.releaseYear);
               }}
               title={`Click to show best trailer for "${movie.title}" in YouTube`}
-              className="group/title text-left text-[15px] sm:text-base font-bold tracking-tight text-white hover:text-red-400 focus:outline-none transition-colors truncate min-w-0 shrink"
+              className="group/title text-left text-base font-bold text-white hover:text-red-400 focus:outline-none transition-colors"
             >
-              <span className="truncate">{movie.title}</span>
+              <span>{movie.title}</span>
             </button>
 
             {/* Series (or Movie) */}
@@ -416,7 +416,7 @@ export function MovieCard({
             {/* Country (Full Name without truncation) */}
             {countriesList.length > 0 && (
               <span
-                className="rounded bg-[#1A1A1A] border border-neutral-700/60 px-1.5 py-0.5 text-[10px] font-medium tracking-tight text-neutral-300 shrink-0 whitespace-nowrap"
+                className="rounded bg-[#1A1A1A] border border-neutral-700/60 px-1.5 py-0.5 text-[10px] font-medium text-neutral-300 shrink-0 whitespace-nowrap"
                 title={countriesList.join(', ')}
               >
                 {countriesList.join(', ')}
@@ -439,7 +439,7 @@ export function MovieCard({
           </div>
 
           {movie.personalRating && (
-            <div className="flex items-center gap-1 rounded-md bg-[#1A1A1A] px-1.5 py-0.5 text-xs font-semibold text-amber-400 border border-neutral-800 shrink-0">
+            <div className="flex items-center gap-1 rounded-md bg-[#1A1A1A] px-1.5 py-0.5 text-xs font-semibold text-amber-400 border border-neutral-800 shrink-0 self-start mt-0.5">
               <Star className="h-3 w-3 fill-amber-400" />
               <span>{movie.personalRating}/10</span>
             </div>
