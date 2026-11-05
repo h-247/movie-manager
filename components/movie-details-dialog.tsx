@@ -17,6 +17,7 @@ import { StatusBadge } from './status-badge';
 import { getFullPosterUrl } from '@/lib/tmdb';
 import { SeriesProgressModal } from './series-progress-modal';
 import { sendPushNotification, requestNotificationPermission } from '@/lib/push-notifications';
+import { openBestTrailer } from '@/lib/trailer';
 
 function parseListField(val: string | null | undefined): string[] {
   if (!val) return [];
@@ -454,18 +455,7 @@ export function MovieDetailsDialog({
                     <div className="flex items-center gap-2 flex-wrap">
                       <button
                         type="button"
-                        onClick={() => {
-                          const query = encodeURIComponent(
-                            `${movie.title} ${movie.releaseYear ? `${movie.releaseYear} ` : ''}official trailer`,
-                          );
-                          if (typeof window !== 'undefined') {
-                            window.open(
-                              `https://www.youtube.com/results?search_query=${query}`,
-                              '_blank',
-                              'noopener,noreferrer',
-                            );
-                          }
-                        }}
+                        onClick={() => openBestTrailer(movie.title, movie.releaseYear)}
                         title={`Click to show best trailer for "${movie.title}" in YouTube`}
                         className="group text-left text-xl sm:text-2xl font-bold tracking-tight text-[#ECECEC] hover:text-red-400 transition-colors"
                       >

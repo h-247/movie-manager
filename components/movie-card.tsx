@@ -3,6 +3,7 @@ import { Star, Clock } from 'lucide-react';
 import type { Movie, WatchStatus } from '@/db/schema';
 import { StatusBadge } from './status-badge';
 import { SeriesProgressModal } from './series-progress-modal';
+import { openBestTrailer } from '@/lib/trailer';
 
 function parseListField(val: string | null | undefined): string[] {
   if (!val) return [];
@@ -379,25 +380,16 @@ export function MovieCard({
       <div>
         {/* Card Header: Title, Series/Movie badge, Country, and Movie Status next to each other on same line */}
         <div className="flex items-center justify-between gap-2 pb-2.5 mb-2.5 border-b border-neutral-800/80">
-          <div className="flex items-center gap-2 min-w-0 flex-1 overflow-hidden">
+          <div className="flex items-center gap-1.5 min-w-0 flex-1 overflow-hidden">
             {/* Title - click to show best trailer in YouTube */}
             <button
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
-                const query = encodeURIComponent(
-                  `${movie.title} ${movie.releaseYear ? `${movie.releaseYear} ` : ''}official trailer`,
-                );
-                if (typeof window !== 'undefined') {
-                  window.open(
-                    `https://www.youtube.com/results?search_query=${query}`,
-                    '_blank',
-                    'noopener,noreferrer',
-                  );
-                }
+                openBestTrailer(movie.title, movie.releaseYear);
               }}
               title={`Click to show best trailer for "${movie.title}" in YouTube`}
-              className="group/title text-left text-base font-bold text-white hover:text-red-400 focus:outline-none transition-colors truncate min-w-0 shrink"
+              className="group/title text-left text-base font-bold text-white hover:text-red-400 focus:outline-none transition-colors shrink-0 max-w-[65%] truncate"
             >
               <span className="truncate">{movie.title}</span>
             </button>
@@ -424,7 +416,7 @@ export function MovieCard({
             {/* Country (Full Name without truncation) */}
             {countriesList.length > 0 && (
               <span
-                className="rounded bg-[#1A1A1A] border border-neutral-700/60 px-1.5 py-0.5 text-[10px] font-medium text-neutral-300 shrink-0 whitespace-nowrap"
+                className="rounded bg-[#1A1A1A] border border-neutral-700/60 px-1.5 py-0.5 text-[10px] font-medium text-neutral-300 min-w-0 shrink truncate whitespace-nowrap"
                 title={countriesList.join(', ')}
               >
                 {countriesList.join(', ')}

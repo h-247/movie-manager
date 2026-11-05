@@ -700,4 +700,12 @@ describe('Movie Watchlist Integration Tests', () => {
     expect(activeEp.status).toBe('Doing');
     expect(activeEp.stremio).toBe('https://web.stremio.com/#/detail/series/tt2442560/1/2');
   });
+
+  it('18. Resolves best YouTube trailer directly to video URL', async () => {
+    const { resolveBestTrailerUrl } = await import('@/lib/trailer');
+
+    const trailerUrl = await resolveBestTrailerUrl('Crew Girl', 2026);
+    expect(trailerUrl).toBeDefined();
+    expect(trailerUrl).toMatch(/https:\/\/www\.youtube\.com\/(watch\?v=|results\?search_query=)/);
+  });
 });
