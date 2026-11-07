@@ -456,19 +456,21 @@ export function MovieCard({
               </span>
             )}
 
-            {/* Movie Status */}
-            <StatusBadge
-              status={displayStatus}
-              size="sm"
-              onClick={
-                movie.mediaType !== 'SERIES'
-                  ? (e) => {
-                      e?.stopPropagation();
-                      handleMovieStatusCycle(e);
-                    }
-                  : undefined
-              }
-            />
+            {/* Movie Status (hidden when TO_DO) */}
+            {displayStatus !== 'TO_DO' && (
+              <StatusBadge
+                status={displayStatus}
+                size="sm"
+                onClick={
+                  movie.mediaType !== 'SERIES'
+                    ? (e) => {
+                        e?.stopPropagation();
+                        handleMovieStatusCycle(e);
+                      }
+                    : undefined
+                }
+              />
+            )}
           </div>
 
           {movie.personalRating && (
@@ -624,7 +626,7 @@ export function MovieCard({
           {/* Movie Status on Card (Phim Lẻ): 3 buttons To do, Doing, Done + Hour/Minute when Doing */}
           {movie.mediaType !== 'SERIES' && (
             <div
-              className="mt-2.5 rounded-lg border border-blue-500/25 bg-blue-950/25 px-2.5 py-1.5 text-xs cursor-default overflow-hidden"
+              className="mt-2.5 flex flex-col gap-2 cursor-default"
               onClick={(e) => {
                 e.stopPropagation();
               }}
@@ -634,7 +636,7 @@ export function MovieCard({
             >
               {/* Row 1: Three status buttons: To do, Doing, Done */}
               <div className="flex items-center gap-2 min-w-0">
-                <div className="flex items-center gap-0.5 rounded-lg bg-black/40 p-0.5 border border-blue-500/20 min-w-0">
+                <div className="flex items-center gap-0.5 rounded-lg bg-black/40 p-0.5 border border-neutral-800 min-w-0">
                   {(
                     [
                       {
@@ -680,7 +682,7 @@ export function MovieCard({
               {/* Row 2: Input hour and minute if movie status is Doing */}
               {movie.status === 'DOING' && (
                 <div
-                  className="mt-2 pt-2 border-t border-blue-500/20 flex items-center justify-between gap-2"
+                  className="flex items-center justify-between gap-2 rounded-lg bg-black/40 p-1.5 border border-neutral-800 max-w-[260px]"
                   onClick={(e) => e.stopPropagation()}
                   onMouseDown={(e) => e.stopPropagation()}
                 >
