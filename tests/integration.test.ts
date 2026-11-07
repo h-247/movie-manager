@@ -708,4 +708,59 @@ describe('Movie Watchlist Integration Tests', () => {
     expect(trailerUrl).toBeDefined();
     expect(trailerUrl).toMatch(/https:\/\/www\.youtube\.com\/(watch\?v=|results\?search_query=)/);
   });
+
+  it('19. Supports editing status and watch time for single movies (phim lẻ)', async () => {
+    const singleMovie: Movie = {
+      id: 'movie-single-1',
+      userId: 'user_123',
+      imdbId: 'tt0111161',
+      imdbUrl: 'https://www.imdb.com/title/tt0111161/',
+      tmdbId: 278,
+      title: 'The Shawshank Redemption',
+      originalTitle: null,
+      mediaType: 'MOVIE',
+      releaseDate: '1994-09-23',
+      releaseYear: 1994,
+      posterPath: null,
+      overview: null,
+      runtimeMinutes: 142,
+      totalSeasons: null,
+      totalEpisodes: null,
+      currentSeason: null,
+      currentEpisode: null,
+      currentHour: null,
+      currentMinute: null,
+      seriesProgress: null,
+      genres: '["Drama"]',
+      countries: '["United States"]',
+      status: 'TO_DO',
+      personalRating: null,
+      notes: null,
+      startedAt: null,
+      completedAt: null,
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+    };
+
+    dbRecords = [singleMovie];
+    service.getMovieById = vi.fn().mockImplementation(() => Promise.resolve(dbRecords[0]));
+
+    // Edit status to DOING with watch time
+    const doingMovie = await service.updateMovie(
+      'movie-single-1',
+      { status: 'DOING', currentHour: 1, currentMinute: 30 },
+      'user_123',
+    );
+    expect(doingMovie.status).toBe('DOING');
+    expect(doingMovie.currentHour).toBe(1);
+    expect(doingMovie.currentMinute).toBe(30);
+
+    // Edit status to DONE
+    const doneMovie = await service.updateMovie(
+      'movie-single-1',
+      { status: 'DONE' },
+      'user_123',
+    );
+    expect(doneMovie.status).toBe('DONE');
+  });
 });

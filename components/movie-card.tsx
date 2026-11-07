@@ -150,18 +150,30 @@ export function MovieCard({
       : null;
 
   const [rawHour, setRawHour] = useState<string>(() =>
-    String(activeSeriesEpisode?.hour ?? movie.currentHour ?? 0),
+    String(
+      movie.mediaType === 'SERIES'
+        ? (activeSeriesEpisode?.hour ?? movie.currentHour ?? 0)
+        : (movie.currentHour ?? 0),
+    ),
   );
   const [rawMinute, setRawMinute] = useState<string>(() =>
-    String(activeSeriesEpisode?.minute ?? movie.currentMinute ?? 0),
+    String(
+      movie.mediaType === 'SERIES'
+        ? (activeSeriesEpisode?.minute ?? movie.currentMinute ?? 0)
+        : (movie.currentMinute ?? 0),
+    ),
   );
 
   useEffect(() => {
-    if (activeSeriesEpisode) {
+    if (movie.mediaType === 'SERIES' && activeSeriesEpisode) {
       setRawHour(String(activeSeriesEpisode.hour ?? movie.currentHour ?? 0));
       setRawMinute(String(activeSeriesEpisode.minute ?? movie.currentMinute ?? 0));
+    } else {
+      setRawHour(String(movie.currentHour ?? 0));
+      setRawMinute(String(movie.currentMinute ?? 0));
     }
   }, [
+    movie.mediaType,
     activeSeriesEpisode?.season,
     activeSeriesEpisode?.episode,
     activeSeriesEpisode?.hour,
@@ -182,24 +194,31 @@ export function MovieCard({
   })();
 
   const handleTimeUpdate = async (newH: number, newM: number) => {
-    if (!onUpdateMovie || !activeSeriesEpisode) return;
+    if (!onUpdateMovie) return;
 
-    const episodes = getSeriesEpisodes(movie);
-    const updatedEpisodes = episodes.map((item) => {
-      if (
-        item.season === activeSeriesEpisode.season &&
-        item.episode === activeSeriesEpisode.episode
-      ) {
-        return { ...item, hour: newH, minute: newM };
-      }
-      return item;
-    });
+    if (movie.mediaType === 'SERIES' && activeSeriesEpisode) {
+      const episodes = getSeriesEpisodes(movie);
+      const updatedEpisodes = episodes.map((item) => {
+        if (
+          item.season === activeSeriesEpisode.season &&
+          item.episode === activeSeriesEpisode.episode
+        ) {
+          return { ...item, hour: newH, minute: newM };
+        }
+        return item;
+      });
 
-    await onUpdateMovie(movie.id, {
-      currentHour: newH,
-      currentMinute: newM,
-      seriesProgress: JSON.stringify(updatedEpisodes),
-    });
+      await onUpdateMovie(movie.id, {
+        currentHour: newH,
+        currentMinute: newM,
+        seriesProgress: JSON.stringify(updatedEpisodes),
+      });
+    } else {
+      await onUpdateMovie(movie.id, {
+        currentHour: newH,
+        currentMinute: newM,
+      });
+    }
   };
 
   const handleHourChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -352,6 +371,20 @@ export function MovieCard({
       });
     } finally {
       setIsUpdatingProgress(false);
+    }
+  };
+
+  const handleMovieDirectStatusChange = async (
+    e: React.MouseEvent,
+    newStatus: WatchStatus,
+  ) => {
+    e.stopPropagation();
+    if (movie.mediaType === 'SERIES' || movie.status === newStatus || isChangingStatus) return;
+    try {
+      setIsChangingStatus(true);
+      await onStatusChange(movie.id, newStatus);
+    } finally {
+      setIsChangingStatus(false);
     }
   };
 
@@ -546,6 +579,108 @@ export function MovieCard({
               {activeSeriesEpisode.status === 'Doing' && (
                 <div
                   className="mt-2 pt-2 border-t border-purple-500/20 flex items-center justify-between gap-2"
+                  onClick={(e) => e.stopPropagation()}
+                  onMouseDown={(e) => e.stopPropagation()}
+                >
+                  <div className="flex items-center gap-1.5 text-[11px] text-sky-300 font-medium">
+                    <Clock className="h-3 w-3 text-sky-400 shrink-0" />
+                    <span>Watch Time:</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1">
+                      <input
+                        type="number"
+                        min={0}
+                        max={99}
+                        value={rawHour}
+                        onChange={handleHourChange}
+                        onBlur={handleHourBlur}
+                        onClick={(e) => e.stopPropagation()}
+                        onMouseDown={(e) => e.stopPropagation()}
+                        className="w-11 rounded border border-neutral-700 bg-black/60 px-1 py-0.5 text-center font-mono text-xs text-white focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500/30"
+                      />
+                      <span className="text-[11px] font-medium text-neutral-400">h</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <input
+                        type="number"
+                        min={0}
+                        max={59}
+                        value={rawMinute}
+                        onChange={handleMinuteChange}
+                        onBlur={handleMinuteBlur}
+                        onClick={(e) => e.stopPropagation()}
+                        onMouseDown={(e) => e.stopPropagation()}
+                        className="w-11 rounded border border-neutral-700 bg-black/60 px-1 py-0.5 text-center font-mono text-xs text-white focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500/30"
+                      />
+                      <span className="text-[11px] font-medium text-neutral-400">m</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Movie Status on Card (Phim Lẻ): 3 buttons To do, Doing, Done + Hour/Minute when Doing */}
+          {movie.mediaType !== 'SERIES' && (
+            <div
+              className="mt-2.5 rounded-lg border border-blue-500/25 bg-blue-950/25 px-2.5 py-1.5 text-xs cursor-default overflow-hidden"
+              onClick={(e) => {
+                e.stopPropagation();
+              }}
+              onMouseDown={(e) => e.stopPropagation()}
+              onMouseUp={(e) => e.stopPropagation()}
+              onPointerDown={(e) => e.stopPropagation()}
+            >
+              {/* Row 1: Three status buttons: To do, Doing, Done */}
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="flex items-center gap-0.5 rounded-lg bg-black/40 p-0.5 border border-blue-500/20 min-w-0">
+                  {(
+                    [
+                      {
+                        id: 'TO_DO',
+                        label: 'To do',
+                        activeClass:
+                          'bg-yellow-500/25 text-yellow-300 border-yellow-500/40 font-bold shadow-sm',
+                      },
+                      {
+                        id: 'DOING',
+                        label: 'Doing',
+                        activeClass:
+                          'bg-sky-500/25 text-sky-300 border-sky-500/40 font-bold shadow-sm',
+                      },
+                      {
+                        id: 'DONE',
+                        label: 'Done',
+                        activeClass:
+                          'bg-emerald-500/25 text-emerald-300 border-emerald-500/40 font-bold shadow-sm',
+                      },
+                    ] as const
+                  ).map((btn) => {
+                    const isSelected = movie.status === btn.id;
+                    return (
+                      <button
+                        key={btn.id}
+                        type="button"
+                        disabled={isChangingStatus}
+                        onClick={(e) => handleMovieDirectStatusChange(e, btn.id)}
+                        className={`flex items-center justify-center px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md text-[10px] sm:text-[11px] whitespace-nowrap transition-all border ${
+                          isSelected
+                            ? btn.activeClass
+                            : 'border-transparent text-neutral-400 hover:text-white hover:bg-neutral-800/50'
+                        } disabled:opacity-50`}
+                      >
+                        <span className="whitespace-nowrap">{btn.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Row 2: Input hour and minute if movie status is Doing */}
+              {movie.status === 'DOING' && (
+                <div
+                  className="mt-2 pt-2 border-t border-blue-500/20 flex items-center justify-between gap-2"
                   onClick={(e) => e.stopPropagation()}
                   onMouseDown={(e) => e.stopPropagation()}
                 >
