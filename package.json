@@ -17,7 +17,9 @@
     "test:e2e": "playwright test",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "wrangler d1 migrations apply site-creator-d1 --local --config wrangler.migrations.json",
-    "db:migrate:prod": "wrangler d1 migrations apply site-creator-d1 --remote --config wrangler.migrations.json"
+    "db:migrate:prod": "wrangler d1 migrations apply site-creator-d1 --remote --config wrangler.migrations.json",
+    "db:export": "node scripts/export-data.cjs",
+    "db:restore": "node scripts/import-data.cjs"
   },
   "dependencies": {
     "@base-ui/react": "1.7.0",
